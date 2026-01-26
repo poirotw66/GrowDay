@@ -1,16 +1,17 @@
+
 import React, { useState } from 'react';
 import { getCalendarDays, formatMonthYear, getTodayString } from '../utils/dateUtils';
-import { GameState } from '../types';
+import { Habit } from '../types';
 import { getStampIcon } from '../utils/stampIcons';
 import { ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
 
 interface Props {
-  gameState: GameState;
+  habit: Habit;
   onStamp: () => void;
   isTodayStamped: boolean;
 }
 
-const CalendarView: React.FC<Props> = ({ gameState, onStamp, isTodayStamped }) => {
+const CalendarView: React.FC<Props> = ({ habit, onStamp, isTodayStamped }) => {
   const [displayDate, setDisplayDate] = useState(new Date());
   
   const year = displayDate.getFullYear();
@@ -19,7 +20,7 @@ const CalendarView: React.FC<Props> = ({ gameState, onStamp, isTodayStamped }) =
   const todayStr = getTodayString();
 
   // The icon shown on the big "Stamp Today" button is always the CURRENT selection
-  const CurrentActionIcon = getStampIcon(gameState.stampIcon);
+  const CurrentActionIcon = getStampIcon(habit.stampIcon);
 
   const handlePrevMonth = () => {
     setDisplayDate(new Date(year, month - 1, 1));
@@ -61,14 +62,12 @@ const CalendarView: React.FC<Props> = ({ gameState, onStamp, isTodayStamped }) =
         {days.map((dateStr, index) => {
           if (!dateStr) return <div key={`empty-${index}`} />;
 
-          const log = gameState.logs[dateStr];
+          const log = habit.logs[dateStr];
           const isStamped = log?.stamped;
           const isToday = dateStr === todayStr;
           
           // Determine which icon to show for this specific day
-          // 1. If the log has a saved icon, use it.
-          // 2. Fallback to current global stampIcon (for legacy data or backward compatibility).
-          const dayIconId = log?.icon || gameState.stampIcon;
+          const dayIconId = log?.icon || habit.stampIcon;
           const DayStampIcon = getStampIcon(dayIconId);
           
           return (

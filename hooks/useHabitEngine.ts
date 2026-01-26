@@ -1,19 +1,17 @@
+
 import { useState, useEffect, useCallback } from 'react';
-import { GameState, DayLog } from '../types';
+import { GameState, DayLog, Habit, PetColor } from '../types';
 import { calculateLevel, calculateStreak } from '../utils/gameLogic';
 import { getTodayString } from '../utils/dateUtils';
+import { assignRandomPet } from '../utils/petData';
 
-const STORAGE_KEY = 'growday_save_v1';
+const STORAGE_KEY = 'growday_save_v2'; // Changed version to v2
+const OLD_STORAGE_KEY = 'growday_save_v1';
 
 const INITIAL_STATE: GameState = {
-  habitName: '',
-  stampIcon: 'star', // Default icon
-  startDate: getTodayString(),
-  logs: {},
-  totalExp: 0,
-  currentLevel: 1,
-  currentStreak: 0,
-  longestStreak: 0,
+  habits: {},
+  activeHabitId: null,
+  unlockedPets: [],
   isOnboarded: false,
 };
 
@@ -23,23 +21,73 @@ export const useHabitEngine = () => {
 
   // Load from local storage on mount
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
+    // 1. Try loading V2
+    const savedV2 = localStorage.getItem(STORAGE_KEY);
+    if (savedV2) {
       try {
-        const parsed = JSON.parse(saved);
-        // Recalculate streak on load to ensure accuracy with passing time
-        const today = getTodayString();
-        const currentStreak = calculateStreak(parsed.logs, today);
+        const parsed = JSON.parse(savedV2);
         
-        setGameState({
-          ...INITIAL_STATE, // Merge with initial to ensure new fields (like stampIcon) exist for old saves
-          ...parsed,
-          currentStreak,
+        // Recalculate streaks for all habits
+        const today = getTodayString();
+        const updatedHabits = { ...parsed.habits };
+        
+        Object.keys(updatedHabits).forEach(key => {
+          const habit = updatedHabits[key];
+          habit.currentStreak = calculateStreak(habit.logs, today);
         });
+
+        setGameState({
+          ...parsed,
+          habits: updatedHabits
+        });
+        setIsLoaded(true);
+        return;
       } catch (e) {
-        console.error("Failed to load save", e);
+        console.error("Failed to load V2 save", e);
       }
     }
+
+    // 2. If V2 not found, check for V1 (Migration)
+    const savedV1 = localStorage.getItem(OLD_STORAGE_KEY);
+    if (savedV1) {
+      try {
+        const parsedV1 = JSON.parse(savedV1);
+        console.log("Migrating from V1 to V2...");
+        
+        const newId = 'habit_' + Date.now();
+        const defaultColor: PetColor = 'green';
+        const assignedPet = assignRandomPet(defaultColor);
+
+        // Convert V1 root state to a Habit object
+        const migratedHabit: Habit = {
+          id: newId,
+          name: parsedV1.habitName || '我的習慣',
+          stampIcon: parsedV1.stampIcon || 'star',
+          petColor: defaultColor,
+          petId: assignedPet,
+          startDate: parsedV1.startDate || getTodayString(),
+          logs: parsedV1.logs || {},
+          totalExp: parsedV1.totalExp || 0,
+          currentLevel: parsedV1.currentLevel || 1,
+          currentStreak: parsedV1.currentStreak || 0,
+          longestStreak: parsedV1.longestStreak || 0
+        };
+
+        const newState: GameState = {
+          habits: { [newId]: migratedHabit },
+          activeHabitId: newId,
+          unlockedPets: [assignedPet],
+          isOnboarded: true
+        };
+
+        setGameState(newState);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
+        // Optional: localStorage.removeItem(OLD_STORAGE_KEY); 
+      } catch (e) {
+        console.error("Failed to migrate V1 save", e);
+      }
+    }
+    
     setIsLoaded(true);
   }, []);
 
@@ -50,156 +98,223 @@ export const useHabitEngine = () => {
     }
   }, [gameState, isLoaded]);
 
-  const completeOnboarding = useCallback((name: string, icon: string) => {
+  // Create a new habit (used in onboarding or adding new goals)
+  const addHabit = useCallback((name: string, icon: string, color: PetColor) => {
+    const newId = 'habit_' + Date.now();
+    const assignedPet = assignRandomPet(color);
+    const today = getTodayString();
+
+    const newHabit: Habit = {
+      id: newId,
+      name,
+      stampIcon: icon,
+      petColor: color,
+      petId: assignedPet,
+      startDate: today,
+      logs: {},
+      totalExp: 0,
+      currentLevel: 1,
+      currentStreak: 0,
+      longestStreak: 0
+    };
+
     setGameState(prev => ({
       ...prev,
-      habitName: name,
-      stampIcon: icon,
+      habits: {
+        ...prev.habits,
+        [newId]: newHabit
+      },
+      activeHabitId: newId, // Switch to new habit immediately
+      unlockedPets: Array.from(new Set([...prev.unlockedPets, assignedPet])),
       isOnboarded: true
     }));
   }, []);
 
+  const switchHabit = useCallback((habitId: string) => {
+    setGameState(prev => {
+        if (!prev.habits[habitId]) return prev;
+        return {
+            ...prev,
+            activeHabitId: habitId
+        };
+    });
+  }, []);
+
   const updateStampIcon = useCallback((icon: string) => {
-    setGameState(prev => ({
-      ...prev,
-      stampIcon: icon
-    }));
+    setGameState(prev => {
+      if (!prev.activeHabitId) return prev;
+      return {
+        ...prev,
+        habits: {
+            ...prev.habits,
+            [prev.activeHabitId]: {
+                ...prev.habits[prev.activeHabitId],
+                stampIcon: icon
+            }
+        }
+      };
+    });
   }, []);
 
   const stampToday = useCallback(() => {
     const today = getTodayString();
     
     setGameState(prev => {
-      // Prevent double stamping
-      if (prev.logs[today]?.stamped) return prev;
+      if (!prev.activeHabitId) return prev;
+      
+      const currentHabit = prev.habits[prev.activeHabitId];
+      if (!currentHabit) return prev;
 
-      const newExp = prev.totalExp + 10; // 10 EXP per stamp
+      // Prevent double stamping
+      if (currentHabit.logs[today]?.stamped) return prev;
+
+      const newExp = currentHabit.totalExp + 10;
       const newLevel = calculateLevel(newExp);
       
       const newLogs = {
-        ...prev.logs,
+        ...currentHabit.logs,
         [today]: {
           date: today,
           stamped: true,
           timestamp: Date.now(),
-          icon: prev.stampIcon // Save the specific icon used at this moment
+          icon: currentHabit.stampIcon
         }
       };
 
       const newStreak = calculateStreak(newLogs, today);
-      const newLongestStreak = Math.max(prev.longestStreak, newStreak);
+      const newLongestStreak = Math.max(currentHabit.longestStreak, newStreak);
 
       return {
         ...prev,
-        logs: newLogs,
-        totalExp: newExp,
-        currentLevel: newLevel,
-        currentStreak: newStreak,
-        longestStreak: newLongestStreak
+        habits: {
+            ...prev.habits,
+            [prev.activeHabitId]: {
+                ...currentHabit,
+                logs: newLogs,
+                totalExp: newExp,
+                currentLevel: newLevel,
+                currentStreak: newStreak,
+                longestStreak: newLongestStreak
+            }
+        }
       };
     });
   }, []);
 
-  // Debug function to stamp any specific date
+  // Debug functions modified to target active habit
   const debugStampDate = useCallback((dateStr: string) => {
     setGameState(prev => {
-      // If already stamped, do nothing
-      if (prev.logs[dateStr]?.stamped) return prev;
+      if (!prev.activeHabitId) return prev;
+      const currentHabit = prev.habits[prev.activeHabitId];
+      if (currentHabit.logs[dateStr]?.stamped) return prev;
 
-      const newExp = prev.totalExp + 10;
+      const newExp = currentHabit.totalExp + 10;
       const newLevel = calculateLevel(newExp);
       
       const newLogs = {
-        ...prev.logs,
+        ...currentHabit.logs,
         [dateStr]: {
           date: dateStr,
           stamped: true,
           timestamp: Date.now(),
-          icon: prev.stampIcon // Use current global icon setting for debug stamps
+          icon: currentHabit.stampIcon
         }
       };
 
-      // We still calculate streak relative to "Real Today"
       const today = getTodayString();
       const newStreak = calculateStreak(newLogs, today);
-      const newLongestStreak = Math.max(prev.longestStreak, newStreak);
+      const newLongestStreak = Math.max(currentHabit.longestStreak, newStreak);
 
       return {
         ...prev,
-        logs: newLogs,
-        totalExp: newExp,
-        currentLevel: newLevel,
-        currentStreak: newStreak,
-        longestStreak: newLongestStreak
+        habits: {
+            ...prev.habits,
+            [prev.activeHabitId]: {
+                ...currentHabit,
+                logs: newLogs,
+                totalExp: newExp,
+                currentLevel: newLevel,
+                currentStreak: newStreak,
+                longestStreak: newLongestStreak
+            }
+        }
       };
     });
   }, []);
 
-  // Debug function to stamp a range of dates
   const debugStampRange = useCallback((startDateStr: string, endDateStr: string) => {
     setGameState(prev => {
-      const newLogs = { ...prev.logs };
+      if (!prev.activeHabitId) return prev;
+      const currentHabit = prev.habits[prev.activeHabitId];
+
+      const newLogs = { ...currentHabit.logs };
       let addedExp = 0;
-      
       const start = new Date(startDateStr);
       const end = new Date(endDateStr);
       
-      // Loop from start to end
       for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
         const dateStr = d.toISOString().split('T')[0];
-        
-        // Only stamp if not already stamped
         if (!newLogs[dateStr]?.stamped) {
           newLogs[dateStr] = {
             date: dateStr,
             stamped: true,
             timestamp: Date.now(),
-            icon: prev.stampIcon // Use current global icon setting
+            icon: currentHabit.stampIcon
           };
           addedExp += 10;
         }
       }
 
-      if (addedExp === 0) return prev; // No changes made
+      if (addedExp === 0) return prev;
 
-      const newExp = prev.totalExp + addedExp;
+      const newExp = currentHabit.totalExp + addedExp;
       const newLevel = calculateLevel(newExp);
       
       const today = getTodayString();
       const newStreak = calculateStreak(newLogs, today);
-      const newLongestStreak = Math.max(prev.longestStreak, newStreak);
+      const newLongestStreak = Math.max(currentHabit.longestStreak, newStreak);
 
       return {
         ...prev,
-        logs: newLogs,
-        totalExp: newExp,
-        currentLevel: newLevel,
-        currentStreak: newStreak,
-        longestStreak: newLongestStreak
+        habits: {
+            ...prev.habits,
+            [prev.activeHabitId]: {
+                ...currentHabit,
+                logs: newLogs,
+                totalExp: newExp,
+                currentLevel: newLevel,
+                currentStreak: newStreak,
+                longestStreak: newLongestStreak
+            }
+        }
       };
     });
   }, []);
 
   const isTodayStamped = useCallback(() => {
     const today = getTodayString();
-    return !!gameState.logs[today]?.stamped;
-  }, [gameState.logs]);
+    if (!gameState.activeHabitId) return false;
+    return !!gameState.habits[gameState.activeHabitId]?.logs[today]?.stamped;
+  }, [gameState]);
 
-  // Count stamped days in the current month (for stats)
   const getMonthlyCount = useCallback((year: number, month: number) => {
+    if (!gameState.activeHabitId) return 0;
+    const currentHabit = gameState.habits[gameState.activeHabitId];
+    
     let count = 0;
-    Object.values(gameState.logs).forEach((log: DayLog) => {
+    Object.values(currentHabit.logs).forEach((log: DayLog) => {
       const d = new Date(log.date);
       if (d.getFullYear() === year && d.getMonth() === month && log.stamped) {
         count++;
       }
     });
     return count;
-  }, [gameState.logs]);
+  }, [gameState]);
 
   const resetProgress = useCallback(() => {
-      if(confirm("你確定要刪除你的世界嗎？此操作無法復原，你的夥伴將會消失。")){
+      if(confirm("你確定要刪除所有資料嗎？所有的精靈與世界都將消失。")){
           localStorage.removeItem(STORAGE_KEY);
+          localStorage.removeItem(OLD_STORAGE_KEY);
           setGameState(INITIAL_STATE);
           window.location.reload();
       }
@@ -207,8 +322,10 @@ export const useHabitEngine = () => {
 
   return {
     gameState,
+    activeHabit: gameState.activeHabitId ? gameState.habits[gameState.activeHabitId] : null,
     isLoaded,
-    completeOnboarding,
+    addHabit,
+    switchHabit,
     updateStampIcon,
     stampToday,
     debugStampDate,

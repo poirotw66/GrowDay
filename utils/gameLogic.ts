@@ -1,44 +1,43 @@
-import { GameState, PetStage, LevelConfig, DayLog } from '../types';
-import { getTodayString } from './dateUtils';
 
-// Configuration for levels
-export const getStageConfig = (level: number): LevelConfig => {
+import { PetStage, LevelConfig, DayLog, PetColor } from '../types';
+import { getColorBg } from './petData';
+
+// Configuration for levels (Metadata only, emoji comes from petData now)
+export const getStageConfig = (level: number, petColor: PetColor): LevelConfig => {
+  const baseBg = getColorBg(petColor);
+
   if (level < 6) {
     return { 
       stage: PetStage.EGG, 
-      label: '新生期', 
-      emoji: '🥚', 
-      colorBg: 'bg-amber-100',
-      description: '一顆神秘的蛋，需要你的堅持來孵化。'
+      label: '孵化期', 
+      colorBg: baseBg,
+      description: '一顆充滿潛力的蛋，正在等待你的行動。'
     };
   } else if (level < 16) {
     return { 
       stage: PetStage.BABY, 
-      label: '幼苗期', 
-      emoji: '🌱', 
-      colorBg: 'bg-emerald-100',
-      description: '生命開始了！繼續用行動灌溉它。'
+      label: '幼年期', 
+      colorBg: baseBg,
+      description: '它破殼而出了！繼續灌溉讓它長大。'
     };
   } else if (level < 30) {
     return { 
       stage: PetStage.CHILD, 
       label: '成長期', 
-      emoji: '🪴', 
-      colorBg: 'bg-green-100',
-      description: '正在變得強壯與高大。'
+      colorBg: baseBg,
+      description: '正在變得強壯，性格也逐漸顯現。'
     };
   } else {
     return { 
       stage: PetStage.ADULT, 
-      label: '成熟期', 
-      emoji: '🌳', 
-      colorBg: 'bg-sky-100',
-      description: '你世界中宏偉的存在，守護著你的自律。'
+      label: '完全體', 
+      colorBg: baseBg,
+      description: '它已經成為獨當一面的守護神。'
     };
   }
 };
 
-// Calculate level based on EXP (Linear difficulty for MVP: Level = 1 + floor(EXP / 10))
+// Calculate level based on EXP (Linear difficulty: Level = 1 + floor(EXP / 10))
 export const calculateLevel = (exp: number): number => {
   return 1 + Math.floor(exp / 10);
 };

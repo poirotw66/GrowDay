@@ -1,17 +1,20 @@
+
 import React, { useEffect, useState } from 'react';
 import { getStageConfig } from '../utils/gameLogic';
-import { GameState } from '../types';
+import { Habit } from '../types';
 import { PartyPopper } from 'lucide-react';
+import { getPetEmoji } from '../utils/petData';
 
 interface Props {
-  gameState: GameState;
+  habit: Habit;
   justStamped: boolean;
   className?: string;
 }
 
-const PetDisplay: React.FC<Props> = ({ gameState, justStamped, className = "" }) => {
-  const config = getStageConfig(gameState.currentLevel);
+const PetDisplay: React.FC<Props> = ({ habit, justStamped, className = "" }) => {
+  const config = getStageConfig(habit.currentLevel, habit.petColor);
   const [bounce, setBounce] = useState(false);
+  const currentEmoji = getPetEmoji(habit.petId, config.stage);
 
   // Trigger bounce animation when justStamped becomes true
   useEffect(() => {
@@ -23,9 +26,8 @@ const PetDisplay: React.FC<Props> = ({ gameState, justStamped, className = "" })
   }, [justStamped]);
 
   // Next level progress calculation
-  const expForCurrentLevel = (gameState.currentLevel - 1) * 10;
-  const expForNextLevel = gameState.currentLevel * 10;
-  const progressInLevel = gameState.totalExp - expForCurrentLevel;
+  const expForCurrentLevel = (habit.currentLevel - 1) * 10;
+  const progressInLevel = habit.totalExp - expForCurrentLevel;
   const progressPercent = Math.min(100, Math.max(0, (progressInLevel / 10) * 100));
 
   return (
@@ -37,7 +39,7 @@ const PetDisplay: React.FC<Props> = ({ gameState, justStamped, className = "" })
 
       {/* Level Badge */}
       <div className="absolute top-8 right-8 bg-white/90 backdrop-blur-sm px-5 py-2 rounded-full shadow-sm text-sm font-bold text-slate-600 flex items-center gap-2 z-20">
-        <span className="text-amber-500 text-base">Lv.{gameState.currentLevel}</span>
+        <span className="text-amber-500 text-base">Lv.{habit.currentLevel}</span>
         <span className="w-px h-3 bg-slate-300"></span>
         <span className="uppercase tracking-wide text-xs">{config.label}</span>
       </div>
@@ -52,7 +54,7 @@ const PetDisplay: React.FC<Props> = ({ gameState, justStamped, className = "" })
          )}
          
         <div className="text-[10rem] md:text-[12rem] lg:text-[14rem] filter drop-shadow-2xl select-none transform transition-all hover:scale-105 cursor-pointer leading-none">
-          {config.emoji}
+          {currentEmoji}
         </div>
         
         {/* Shadow under pet */}
@@ -62,7 +64,7 @@ const PetDisplay: React.FC<Props> = ({ gameState, justStamped, className = "" })
       {/* Status Text */}
       <div className="mt-8 text-center z-10 px-8 max-w-lg">
         <h2 className="text-3xl font-bold text-slate-700 opacity-90 mb-3 tracking-tight">
-            {gameState.habitName}
+            {habit.name}
         </h2>
         <p className="text-slate-600 text-lg font-medium opacity-80 leading-relaxed">
             {bounce ? "太棒了！你的世界正在成長！" : config.description}
