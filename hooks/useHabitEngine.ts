@@ -1,18 +1,27 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { GameState, DayLog, Habit, PetColor } from '../types';
+import { GameState, DayLog, Habit, PetColor, WorldState, PlacedItem, PlacedPet, PetStage } from '../types';
 import { calculateLevel, calculateStreak } from '../utils/gameLogic';
 import { getTodayString } from '../utils/dateUtils';
-import { assignRandomPet } from '../utils/petData';
+import { assignRandomPet, getPetById } from '../utils/petData';
+import { getDefaultUnlockedIcons } from '../utils/stampIcons';
+import { INITIAL_AREAS, DECORATION_ITEMS } from '../utils/worldData';
 
-const STORAGE_KEY = 'growday_save_v2'; // Changed version to v2
+const STORAGE_KEY = 'growday_save_v2'; 
 const OLD_STORAGE_KEY = 'growday_save_v1';
 
 const INITIAL_STATE: GameState = {
   habits: {},
   activeHabitId: null,
   unlockedPets: [],
+  unlockedIcons: getDefaultUnlockedIcons(),
   isOnboarded: false,
+  coins: 0,
+  inventory: [],
+  world: {
+    unlockedAreas: ['home'],
+    areas: JSON.parse(JSON.stringify(INITIAL_AREAS)) // Deep copy to avoid reference issues
+  }
 };
 
 export const useHabitEngine = () => {
@@ -36,10 +45,16 @@ export const useHabitEngine = () => {
           habit.currentStreak = calculateStreak(habit.logs, today);
         });
 
-        setGameState({
-          ...parsed,
-          habits: updatedHabits
-        });
+        // Ensure Phase 3 fields exist for existing users
+        const updatedState = {
+           ...INITIAL_STATE, // Start with defaults
+           ...parsed,        // Overwrite with saved data
+           habits: updatedHabits,
+           // Explicitly merge world state if it exists partially or not at all
+           world: parsed.world ? { ...INITIAL_STATE.world, ...parsed.world } : INITIAL_STATE.world
+        };
+
+        setGameState(updatedState);
         setIsLoaded(true);
         return;
       } catch (e) {
@@ -74,6 +89,7 @@ export const useHabitEngine = () => {
         };
 
         const newState: GameState = {
+          ...INITIAL_STATE,
           habits: { [newId]: migratedHabit },
           activeHabitId: newId,
           unlockedPets: [assignedPet],
@@ -82,7 +98,6 @@ export const useHabitEngine = () => {
 
         setGameState(newState);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
-        // Optional: localStorage.removeItem(OLD_STORAGE_KEY); 
       } catch (e) {
         console.error("Failed to migrate V1 save", e);
       }
@@ -98,7 +113,7 @@ export const useHabitEngine = () => {
     }
   }, [gameState, isLoaded]);
 
-  // Create a new habit (used in onboarding or adding new goals)
+  // Create a new habit
   const addHabit = useCallback((name: string, icon: string, color: PetColor) => {
     const newId = 'habit_' + Date.now();
     const assignedPet = assignRandomPet(color);
@@ -124,7 +139,7 @@ export const useHabitEngine = () => {
         ...prev.habits,
         [newId]: newHabit
       },
-      activeHabitId: newId, // Switch to new habit immediately
+      activeHabitId: newId,
       unlockedPets: Array.from(new Set([...prev.unlockedPets, assignedPet])),
       isOnboarded: true
     }));
@@ -156,6 +171,36 @@ export const useHabitEngine = () => {
     });
   }, []);
 
+  // Helper to check for new unlocks
+  const checkUnlockableIcons = (habit: Habit, currentUnlocked: string[], monthlyCount: number): string[] => {
+    const newUnlocked = [...currentUnlocked];
+    
+    const tryUnlock = (id: string) => {
+      if (!newUnlocked.includes(id)) newUnlocked.push(id);
+    };
+
+    if ((habit.totalExp / 10) >= 3) tryUnlock('feather');
+    if (habit.currentStreak >= 3) tryUnlock('fire');
+    if (habit.currentStreak >= 7) tryUnlock('zap');
+    if (habit.currentStreak >= 30) tryUnlock('trophy');
+    if (habit.currentStreak >= 100) tryUnlock('diamond');
+    if (habit.currentLevel >= 10) tryUnlock('crown');
+    if (monthlyCount >= 20) tryUnlock('anchor');
+
+    return newUnlocked;
+  };
+
+  const getHabitMonthlyCount = (habit: Habit, year: number, month: number) => {
+    let count = 0;
+    Object.values(habit.logs).forEach((log: DayLog) => {
+      const d = new Date(log.date);
+      if (d.getFullYear() === year && d.getMonth() === month && log.stamped) {
+        count++;
+      }
+    });
+    return count;
+  };
+
   const stampToday = useCallback(() => {
     const today = getTodayString();
     
@@ -165,7 +210,6 @@ export const useHabitEngine = () => {
       const currentHabit = prev.habits[prev.activeHabitId];
       if (!currentHabit) return prev;
 
-      // Prevent double stamping
       if (currentHabit.logs[today]?.stamped) return prev;
 
       const newExp = currentHabit.totalExp + 10;
@@ -184,24 +228,164 @@ export const useHabitEngine = () => {
       const newStreak = calculateStreak(newLogs, today);
       const newLongestStreak = Math.max(currentHabit.longestStreak, newStreak);
 
+      const updatedHabit = {
+        ...currentHabit,
+        logs: newLogs,
+        totalExp: newExp,
+        currentLevel: newLevel,
+        currentStreak: newStreak,
+        longestStreak: newLongestStreak
+      };
+
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+      const monthlyCount = getHabitMonthlyCount(updatedHabit, currentYear, currentMonth);
+      const updatedUnlockedIcons = checkUnlockableIcons(updatedHabit, prev.unlockedIcons, monthlyCount);
+
       return {
         ...prev,
         habits: {
             ...prev.habits,
-            [prev.activeHabitId]: {
-                ...currentHabit,
-                logs: newLogs,
-                totalExp: newExp,
-                currentLevel: newLevel,
-                currentStreak: newStreak,
-                longestStreak: newLongestStreak
+            [prev.activeHabitId]: updatedHabit
+        },
+        unlockedIcons: updatedUnlockedIcons,
+        coins: prev.coins + 20 // Earn 20 coins per stamp
+      };
+    });
+  }, []);
+
+  // --- Phase 3 Actions ---
+
+  const buyDecoration = useCallback((itemId: string) => {
+    setGameState(prev => {
+      const item = DECORATION_ITEMS.find(i => i.id === itemId);
+      if (!item || prev.coins < item.price) return prev;
+
+      return {
+        ...prev,
+        coins: prev.coins - item.price,
+        inventory: [...prev.inventory, itemId]
+      };
+    });
+  }, []);
+
+  const placeDecoration = useCallback((areaId: string, itemId: string) => {
+    setGameState(prev => {
+      const area = prev.world.areas[areaId];
+      if (!area) return prev;
+
+      // Simple random placement for MVP or fixed slots. Let's do random coordinates 10-90%
+      const newPlacedItem: PlacedItem = {
+        id: Date.now().toString(),
+        itemId,
+        x: Math.floor(Math.random() * 80) + 10,
+        y: Math.floor(Math.random() * 40) + 40 // Keep them somewhat on the ground
+      };
+
+      return {
+        ...prev,
+        world: {
+          ...prev.world,
+          areas: {
+            ...prev.world.areas,
+            [areaId]: {
+              ...area,
+              placedItems: [...area.placedItems, newPlacedItem]
             }
+          }
         }
       };
     });
   }, []);
 
-  // Debug functions modified to target active habit
+  const removeDecoration = useCallback((areaId: string, instanceId: string) => {
+    setGameState(prev => {
+      const area = prev.world.areas[areaId];
+      if (!area) return prev;
+
+      return {
+        ...prev,
+        world: {
+          ...prev.world,
+          areas: {
+            ...prev.world.areas,
+            [areaId]: {
+              ...area,
+              placedItems: area.placedItems.filter(i => i.id !== instanceId)
+            }
+          }
+        }
+      };
+    });
+  }, []);
+
+  const placePetInArea = useCallback((areaId: string, petId: string, stage: PetStage) => {
+    setGameState(prev => {
+        const area = prev.world.areas[areaId];
+        if (!area) return prev;
+
+        const newPlacedPet: PlacedPet = {
+            id: Date.now().toString(),
+            petId,
+            stage,
+            x: Math.floor(Math.random() * 80) + 10
+        };
+
+        return {
+            ...prev,
+            world: {
+                ...prev.world,
+                areas: {
+                    ...prev.world.areas,
+                    [areaId]: {
+                        ...area,
+                        placedPets: [...area.placedPets, newPlacedPet]
+                    }
+                }
+            }
+        };
+    });
+  }, []);
+
+  const removePetFromArea = useCallback((areaId: string, instanceId: string) => {
+     setGameState(prev => {
+        const area = prev.world.areas[areaId];
+        if (!area) return prev;
+        
+        return {
+            ...prev,
+            world: {
+                ...prev.world,
+                areas: {
+                    ...prev.world.areas,
+                    [areaId]: {
+                        ...area,
+                        placedPets: area.placedPets.filter(p => p.id !== instanceId)
+                    }
+                }
+            }
+        };
+     });
+  }, []);
+
+  const unlockArea = useCallback((areaId: string) => {
+    setGameState(prev => {
+       const area = INITIAL_AREAS[areaId];
+       if (!area || prev.coins < area.unlockCost) return prev;
+       
+       return {
+          ...prev,
+          coins: prev.coins - area.unlockCost,
+          world: {
+             ...prev.world,
+             unlockedAreas: [...prev.world.unlockedAreas, areaId]
+          }
+       };
+    });
+  }, []);
+
+  // -----------------------
+
   const debugStampDate = useCallback((dateStr: string) => {
     setGameState(prev => {
       if (!prev.activeHabitId) return prev;
@@ -225,19 +409,27 @@ export const useHabitEngine = () => {
       const newStreak = calculateStreak(newLogs, today);
       const newLongestStreak = Math.max(currentHabit.longestStreak, newStreak);
 
+      const updatedHabit = {
+          ...currentHabit,
+          logs: newLogs,
+          totalExp: newExp,
+          currentLevel: newLevel,
+          currentStreak: newStreak,
+          longestStreak: newLongestStreak
+      };
+
+      const d = new Date(dateStr);
+      const monthlyCount = getHabitMonthlyCount(updatedHabit, d.getFullYear(), d.getMonth());
+      const updatedUnlockedIcons = checkUnlockableIcons(updatedHabit, prev.unlockedIcons, monthlyCount);
+
       return {
         ...prev,
         habits: {
             ...prev.habits,
-            [prev.activeHabitId]: {
-                ...currentHabit,
-                logs: newLogs,
-                totalExp: newExp,
-                currentLevel: newLevel,
-                currentStreak: newStreak,
-                longestStreak: newLongestStreak
-            }
-        }
+            [prev.activeHabitId]: updatedHabit
+        },
+        unlockedIcons: updatedUnlockedIcons,
+        coins: prev.coins + 20
       };
     });
   }, []);
@@ -274,19 +466,25 @@ export const useHabitEngine = () => {
       const newStreak = calculateStreak(newLogs, today);
       const newLongestStreak = Math.max(currentHabit.longestStreak, newStreak);
 
+      const updatedHabit = {
+          ...currentHabit,
+          logs: newLogs,
+          totalExp: newExp,
+          currentLevel: newLevel,
+          currentStreak: newStreak,
+          longestStreak: newLongestStreak
+      };
+
+      const updatedUnlockedIcons = checkUnlockableIcons(updatedHabit, prev.unlockedIcons, 0); 
+
       return {
         ...prev,
         habits: {
             ...prev.habits,
-            [prev.activeHabitId]: {
-                ...currentHabit,
-                logs: newLogs,
-                totalExp: newExp,
-                currentLevel: newLevel,
-                currentStreak: newStreak,
-                longestStreak: newLongestStreak
-            }
-        }
+            [prev.activeHabitId]: updatedHabit
+        },
+        unlockedIcons: updatedUnlockedIcons,
+        coins: prev.coins + (addedExp * 2) // 20 coins per stamp
       };
     });
   }, []);
@@ -299,16 +497,7 @@ export const useHabitEngine = () => {
 
   const getMonthlyCount = useCallback((year: number, month: number) => {
     if (!gameState.activeHabitId) return 0;
-    const currentHabit = gameState.habits[gameState.activeHabitId];
-    
-    let count = 0;
-    Object.values(currentHabit.logs).forEach((log: DayLog) => {
-      const d = new Date(log.date);
-      if (d.getFullYear() === year && d.getMonth() === month && log.stamped) {
-        count++;
-      }
-    });
-    return count;
+    return getHabitMonthlyCount(gameState.habits[gameState.activeHabitId], year, month);
   }, [gameState]);
 
   const resetProgress = useCallback(() => {
@@ -332,6 +521,13 @@ export const useHabitEngine = () => {
     debugStampRange,
     isTodayStamped,
     getMonthlyCount,
-    resetProgress
+    resetProgress,
+    // Phase 3
+    buyDecoration,
+    placeDecoration,
+    removeDecoration,
+    placePetInArea,
+    removePetFromArea,
+    unlockArea
   };
 };

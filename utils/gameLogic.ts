@@ -2,25 +2,32 @@
 import { PetStage, LevelConfig, DayLog, PetColor } from '../types';
 import { getColorBg } from './petData';
 
+// Define thresholds for evolution
+export const STAGE_THRESHOLDS = {
+  BABY: 6,   // Reach Lv 6 to become Baby
+  CHILD: 16, // Reach Lv 16 to become Child
+  ADULT: 30  // Reach Lv 30 to become Adult
+};
+
 // Configuration for levels (Metadata only, emoji comes from petData now)
 export const getStageConfig = (level: number, petColor: PetColor): LevelConfig => {
   const baseBg = getColorBg(petColor);
 
-  if (level < 6) {
+  if (level < STAGE_THRESHOLDS.BABY) {
     return { 
       stage: PetStage.EGG, 
       label: '孵化期', 
       colorBg: baseBg,
       description: '一顆充滿潛力的蛋，正在等待你的行動。'
     };
-  } else if (level < 16) {
+  } else if (level < STAGE_THRESHOLDS.CHILD) {
     return { 
       stage: PetStage.BABY, 
       label: '幼年期', 
       colorBg: baseBg,
       description: '它破殼而出了！繼續灌溉讓它長大。'
     };
-  } else if (level < 30) {
+  } else if (level < STAGE_THRESHOLDS.ADULT) {
     return { 
       stage: PetStage.CHILD, 
       label: '成長期', 
@@ -38,6 +45,7 @@ export const getStageConfig = (level: number, petColor: PetColor): LevelConfig =
 };
 
 // Calculate level based on EXP (Linear difficulty: Level = 1 + floor(EXP / 10))
+// 1 Stamp = 10 EXP = 1 Level Up (Simple progression for visual satisfaction)
 export const calculateLevel = (exp: number): number => {
   return 1 + Math.floor(exp / 10);
 };

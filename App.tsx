@@ -7,8 +7,9 @@ import Onboarding from './components/Onboarding';
 import StatsBar from './components/StatsBar';
 import HabitSwitcher from './components/HabitSwitcher';
 import Compendium from './components/Compendium';
+import WorldView from './components/WorldView';
 import { STAMP_OPTIONS } from './utils/stampIcons';
-import { Settings, RefreshCw, Sprout, FlaskConical, Check, CalendarRange, Stamp } from 'lucide-react';
+import { Settings, RefreshCw, Sprout, FlaskConical, Check, CalendarRange, Stamp, Lock, Map as MapIcon, Home } from 'lucide-react';
 
 function App() {
   const { 
@@ -23,7 +24,14 @@ function App() {
     debugStampRange,
     isTodayStamped, 
     getMonthlyCount,
-    resetProgress
+    resetProgress,
+    // Phase 3
+    buyDecoration,
+    placeDecoration,
+    removeDecoration,
+    placePetInArea,
+    removePetFromArea,
+    unlockArea
   } = useHabitEngine();
 
   const [justStamped, setJustStamped] = useState(false);
@@ -32,6 +40,9 @@ function App() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showCompendium, setShowCompendium] = useState(false);
   
+  // Navigation State
+  const [currentView, setCurrentView] = useState<'habits' | 'world'>('habits');
+
   // Debug states
   const [debugDate, setDebugDate] = useState('');
   const [debugStartDate, setDebugStartDate] = useState('');
@@ -81,6 +92,27 @@ function App() {
 
   const currentMonthCount = getMonthlyCount(new Date().getFullYear(), new Date().getMonth());
 
+  // --- WORLD VIEW RENDER ---
+  if (currentView === 'world') {
+      return (
+          <div className="min-h-screen bg-slate-50 font-sans text-slate-900 p-4 lg:p-8 relative flex flex-col items-center">
+              <div className="w-full max-w-5xl bg-white rounded-[2.5rem] shadow-xl p-4 lg:p-8 min-h-[90vh]">
+                  <WorldView 
+                      gameState={gameState}
+                      onBack={() => setCurrentView('habits')}
+                      buyDecoration={buyDecoration}
+                      placeDecoration={placeDecoration}
+                      removeDecoration={removeDecoration}
+                      placePetInArea={placePetInArea}
+                      removePetFromArea={removePetFromArea}
+                      unlockArea={unlockArea}
+                  />
+              </div>
+          </div>
+      );
+  }
+
+  // --- MAIN HABIT VIEW RENDER ---
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 p-4 lg:p-8 relative">
       
@@ -114,14 +146,23 @@ function App() {
             <h1 className="text-2xl font-bold text-slate-800 tracking-tight">GrowDay</h1>
             </div>
 
-            <div className="relative z-40">
-            <button 
-                onClick={() => setShowSettings(!showSettings)}
-                className="p-3 bg-white hover:bg-slate-100 rounded-full text-slate-500 transition-all shadow-sm border border-slate-200"
-                title="設定"
-            >
-                <Settings size={22} />
-            </button>
+            <div className="flex items-center gap-2 relative z-40">
+                {/* World Map Toggle Button */}
+                <button 
+                    onClick={() => setCurrentView('world')}
+                    className="flex items-center gap-2 px-4 py-3 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-full font-bold transition-all shadow-sm border border-indigo-100"
+                >
+                    <MapIcon size={20} />
+                    <span className="hidden md:inline">前往世界</span>
+                </button>
+
+                <button 
+                    onClick={() => setShowSettings(!showSettings)}
+                    className="p-3 bg-white hover:bg-slate-100 rounded-full text-slate-500 transition-all shadow-sm border border-slate-200"
+                    title="設定"
+                >
+                    <Settings size={22} />
+                </button>
             
             {/* Settings Dropdown */}
             {showSettings && (
@@ -152,20 +193,40 @@ function App() {
                         {STAMP_OPTIONS.map((option) => {
                             const Icon = option.icon;
                             const isSelected = activeHabit.stampIcon === option.id;
+                            const isUnlocked = gameState.unlockedIcons?.includes(option.id);
+
                             return (
                             <button
                                 key={option.id}
-                                onClick={() => updateStampIcon(option.id)}
+                                disabled={!isUnlocked}
+                                onClick={() => isUnlocked && updateStampIcon(option.id)}
                                 className={`
-                                    aspect-square flex items-center justify-center rounded-lg transition-all
+                                    relative aspect-square flex items-center justify-center rounded-lg transition-all group
                                     ${isSelected 
                                         ? 'bg-orange-500 text-white shadow-md' 
-                                        : 'bg-white text-slate-400 hover:bg-orange-100 hover:text-orange-500'
+                                        : isUnlocked
+                                            ? 'bg-white text-slate-400 hover:bg-orange-100 hover:text-orange-500'
+                                            : 'bg-slate-100 text-slate-300 cursor-not-allowed'
                                     }
                                 `}
-                                title={option.label}
+                                title={isUnlocked ? option.label : option.unlockHint}
                             >
                                 <Icon size={18} fill={isSelected ? "currentColor" : "none"} />
+                                
+                                {/* Lock Overlay */}
+                                {!isUnlocked && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-slate-50/50 rounded-lg">
+                                        <Lock size={12} className="text-slate-400" />
+                                    </div>
+                                )}
+
+                                {/* Hover Tooltip for Locked Items */}
+                                {!isUnlocked && (
+                                    <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-32 bg-slate-800 text-white text-[10px] p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 text-center shadow-xl">
+                                        {option.unlockHint}
+                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
+                                    </div>
+                                )}
                             </button>
                             );
                         })}

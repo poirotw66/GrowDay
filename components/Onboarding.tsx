@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Sparkles, ArrowRight, ArrowLeft } from 'lucide-react';
 import { STAMP_OPTIONS } from '../utils/stampIcons';
@@ -23,6 +22,9 @@ const Onboarding: React.FC<Props> = ({ onComplete, isAddingNew = false, onCancel
   const [habit, setHabit] = useState('');
   const [selectedIcon, setSelectedIcon] = useState('star');
   const [selectedColor, setSelectedColor] = useState<PetColor>('green');
+
+  // Filter only icons that don't have an unlock hint (Defaults)
+  const availableIcons = STAMP_OPTIONS.filter(opt => !opt.unlockHint);
 
   const handleNextStep = (e: React.FormEvent) => {
     e.preventDefault();
@@ -162,7 +164,7 @@ const Onboarding: React.FC<Props> = ({ onComplete, isAddingNew = false, onCancel
              </div>
 
              <div className="grid grid-cols-4 sm:grid-cols-5 gap-3 mb-10 max-w-lg mx-auto">
-                {STAMP_OPTIONS.map((option) => {
+                {availableIcons.map((option) => {
                     const Icon = option.icon;
                     const isSelected = selectedIcon === option.id;
                     return (
