@@ -3,11 +3,13 @@ export interface DayLog {
   date: string; // Format: YYYY-MM-DD
   stamped: boolean;
   timestamp: number;
+  icon?: string; // Optional: The specific icon ID used for this day
 }
 
 // Define the main state of the user's progress
 export interface GameState {
   habitName: string;
+  stampIcon: string; // The current global selection (for new stamps)
   startDate: string;
   logs: Record<string, DayLog>; // Map of date string to log
   totalExp: number;

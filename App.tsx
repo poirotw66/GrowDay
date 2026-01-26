@@ -4,13 +4,15 @@ import PetDisplay from './components/PetDisplay';
 import CalendarView from './components/CalendarView';
 import Onboarding from './components/Onboarding';
 import StatsBar from './components/StatsBar';
-import { Settings, RefreshCw, Sprout, FlaskConical, Check, CalendarRange } from 'lucide-react';
+import { STAMP_OPTIONS, getStampIcon } from './utils/stampIcons';
+import { Settings, RefreshCw, Sprout, FlaskConical, Check, CalendarRange, Stamp } from 'lucide-react';
 
 function App() {
   const { 
     gameState, 
     isLoaded, 
-    setHabitName, 
+    completeOnboarding, 
+    updateStampIcon,
     stampToday, 
     debugStampDate,
     debugStampRange,
@@ -21,6 +23,7 @@ function App() {
 
   const [justStamped, setJustStamped] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showIconSelector, setShowIconSelector] = useState(false);
   
   // Debug states
   const [debugDate, setDebugDate] = useState('');
@@ -30,7 +33,7 @@ function App() {
   if (!isLoaded) return <div className="h-screen w-full bg-slate-50 flex items-center justify-center text-slate-400 font-medium">載入中...</div>;
 
   if (!gameState.isOnboarded) {
-    return <Onboarding onComplete={setHabitName} />;
+    return <Onboarding onComplete={completeOnboarding} />;
   }
 
   const handleStamp = () => {
@@ -88,15 +91,52 @@ function App() {
            
            {/* Settings Dropdown */}
            {showSettings && (
-             <div className="absolute right-0 top-14 bg-white rounded-2xl shadow-xl p-2 w-72 border border-slate-100 animate-in fade-in slide-in-from-top-2 overflow-hidden max-h-[80vh] overflow-y-auto z-50">
+             <div className="absolute right-0 top-14 bg-white rounded-2xl shadow-xl p-2 w-80 border border-slate-100 animate-in fade-in slide-in-from-top-2 overflow-hidden max-h-[80vh] overflow-y-auto z-50">
                 <div className="px-4 py-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">設定</div>
+                
+                {/* Reset Button */}
                 <button 
                   onClick={resetProgress}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-500 hover:bg-red-50 rounded-xl transition-colors font-medium"
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-500 hover:bg-red-50 rounded-xl transition-colors font-medium mb-1"
                 >
                   <RefreshCw size={16} />
                   重置我的世界
                 </button>
+
+                {/* Change Icon Toggle */}
+                <button 
+                  onClick={() => setShowIconSelector(!showIconSelector)}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 rounded-xl transition-colors font-medium"
+                >
+                  <Stamp size={16} />
+                  更換打卡印章
+                </button>
+
+                {/* Icon Selector Grid */}
+                {showIconSelector && (
+                  <div className="bg-slate-50 p-3 m-2 rounded-xl grid grid-cols-5 gap-2 border border-slate-100">
+                    {STAMP_OPTIONS.map((option) => {
+                        const Icon = option.icon;
+                        const isSelected = gameState.stampIcon === option.id;
+                        return (
+                          <button
+                            key={option.id}
+                            onClick={() => updateStampIcon(option.id)}
+                            className={`
+                                aspect-square flex items-center justify-center rounded-lg transition-all
+                                ${isSelected 
+                                    ? 'bg-orange-500 text-white shadow-md' 
+                                    : 'bg-white text-slate-400 hover:bg-orange-100 hover:text-orange-500'
+                                }
+                            `}
+                            title={option.label}
+                          >
+                             <Icon size={18} fill={isSelected ? "currentColor" : "none"} />
+                          </button>
+                        );
+                    })}
+                  </div>
+                )}
 
                 {/* Developer Tools Section */}
                 <div className="border-t border-slate-100 my-2 pt-2">

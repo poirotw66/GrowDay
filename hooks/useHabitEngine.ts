@@ -7,6 +7,7 @@ const STORAGE_KEY = 'growday_save_v1';
 
 const INITIAL_STATE: GameState = {
   habitName: '',
+  stampIcon: 'star', // Default icon
   startDate: getTodayString(),
   logs: {},
   totalExp: 0,
@@ -31,6 +32,7 @@ export const useHabitEngine = () => {
         const currentStreak = calculateStreak(parsed.logs, today);
         
         setGameState({
+          ...INITIAL_STATE, // Merge with initial to ensure new fields (like stampIcon) exist for old saves
           ...parsed,
           currentStreak,
         });
@@ -48,11 +50,19 @@ export const useHabitEngine = () => {
     }
   }, [gameState, isLoaded]);
 
-  const setHabitName = useCallback((name: string) => {
+  const completeOnboarding = useCallback((name: string, icon: string) => {
     setGameState(prev => ({
       ...prev,
       habitName: name,
+      stampIcon: icon,
       isOnboarded: true
+    }));
+  }, []);
+
+  const updateStampIcon = useCallback((icon: string) => {
+    setGameState(prev => ({
+      ...prev,
+      stampIcon: icon
     }));
   }, []);
 
@@ -71,7 +81,8 @@ export const useHabitEngine = () => {
         [today]: {
           date: today,
           stamped: true,
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          icon: prev.stampIcon // Save the specific icon used at this moment
         }
       };
 
@@ -103,7 +114,8 @@ export const useHabitEngine = () => {
         [dateStr]: {
           date: dateStr,
           stamped: true,
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          icon: prev.stampIcon // Use current global icon setting for debug stamps
         }
       };
 
@@ -141,7 +153,8 @@ export const useHabitEngine = () => {
           newLogs[dateStr] = {
             date: dateStr,
             stamped: true,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            icon: prev.stampIcon // Use current global icon setting
           };
           addedExp += 10;
         }
@@ -195,7 +208,8 @@ export const useHabitEngine = () => {
   return {
     gameState,
     isLoaded,
-    setHabitName,
+    completeOnboarding,
+    updateStampIcon,
     stampToday,
     debugStampDate,
     debugStampRange,

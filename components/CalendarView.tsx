@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { getCalendarDays, formatMonthYear, getTodayString } from '../utils/dateUtils';
 import { GameState } from '../types';
-import { ChevronLeft, ChevronRight, Stamp, CheckCircle2 } from 'lucide-react';
+import { getStampIcon } from '../utils/stampIcons';
+import { ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
 
 interface Props {
   gameState: GameState;
@@ -16,6 +17,9 @@ const CalendarView: React.FC<Props> = ({ gameState, onStamp, isTodayStamped }) =
   const month = displayDate.getMonth();
   const days = getCalendarDays(year, month);
   const todayStr = getTodayString();
+
+  // The icon shown on the big "Stamp Today" button is always the CURRENT selection
+  const CurrentActionIcon = getStampIcon(gameState.stampIcon);
 
   const handlePrevMonth = () => {
     setDisplayDate(new Date(year, month - 1, 1));
@@ -57,8 +61,15 @@ const CalendarView: React.FC<Props> = ({ gameState, onStamp, isTodayStamped }) =
         {days.map((dateStr, index) => {
           if (!dateStr) return <div key={`empty-${index}`} />;
 
-          const isStamped = gameState.logs[dateStr]?.stamped;
+          const log = gameState.logs[dateStr];
+          const isStamped = log?.stamped;
           const isToday = dateStr === todayStr;
+          
+          // Determine which icon to show for this specific day
+          // 1. If the log has a saved icon, use it.
+          // 2. Fallback to current global stampIcon (for legacy data or backward compatibility).
+          const dayIconId = log?.icon || gameState.stampIcon;
+          const DayStampIcon = getStampIcon(dayIconId);
           
           return (
             <div key={dateStr} className="flex flex-col items-center justify-center">
@@ -74,7 +85,7 @@ const CalendarView: React.FC<Props> = ({ gameState, onStamp, isTodayStamped }) =
                 `}
               >
                 {isStamped ? (
-                   <Stamp size={20} fill="currentColor" className="text-white" />
+                   <DayStampIcon size={20} fill="currentColor" className="text-white" />
                 ) : (
                   <span>{parseInt(dateStr.split('-')[2])}</span>
                 )}
@@ -105,7 +116,7 @@ const CalendarView: React.FC<Props> = ({ gameState, onStamp, isTodayStamped }) =
             ) : (
                 <>
                     <div className="relative">
-                        <Stamp size={24} className="animate-bounce" />
+                        <CurrentActionIcon size={24} className="animate-bounce" />
                     </div>
                     今天打卡
                 </>
