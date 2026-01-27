@@ -2,20 +2,24 @@
 import React, { useEffect, useState } from 'react';
 import { getStageConfig, STAGE_THRESHOLDS } from '../utils/gameLogic';
 import { Habit, PetStage } from '../types';
-import { PartyPopper, Info, X, ArrowDown } from 'lucide-react';
+import { PartyPopper, Info, X, Medal, Sparkles } from 'lucide-react';
 import { getPetEmoji } from '../utils/petData';
 
 interface Props {
   habit: Habit;
   justStamped: boolean;
   className?: string;
+  onRetire: (id: string) => void;
 }
 
-const PetDisplay: React.FC<Props> = ({ habit, justStamped, className = "" }) => {
+const PetDisplay: React.FC<Props> = ({ habit, justStamped, className = "", onRetire }) => {
   const config = getStageConfig(habit.currentLevel, habit.petColor);
   const [bounce, setBounce] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
+  const [showRetireConfirm, setShowRetireConfirm] = useState(false);
+  
   const currentEmoji = getPetEmoji(habit.petId, config.stage);
+  const isMaxLevel = habit.currentLevel >= STAGE_THRESHOLDS.ADULT;
 
   // Trigger bounce animation when justStamped becomes true
   useEffect(() => {
@@ -63,6 +67,13 @@ const PetDisplay: React.FC<Props> = ({ habit, justStamped, className = "" }) => 
       <div className="absolute top-10 left-10 w-32 h-32 bg-white opacity-20 rounded-full blur-2xl animate-pulse"></div>
       <div className="absolute bottom-20 right-10 w-48 h-48 bg-white opacity-20 rounded-full blur-3xl"></div>
 
+      {/* Generation Badge (if > 1) */}
+      {habit.generation && habit.generation > 1 && (
+          <div className="absolute top-8 left-1/2 -translate-x-1/2 bg-white/50 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-slate-600 border border-white/50 z-20">
+              第 {habit.generation} 世代
+          </div>
+      )}
+
       {/* Info Button (Top Left) */}
       <button 
         onClick={() => setShowInfo(true)}
@@ -106,13 +117,58 @@ const PetDisplay: React.FC<Props> = ({ habit, justStamped, className = "" }) => 
         </p>
       </div>
 
-      {/* Progress Bar */}
-      <div className="absolute bottom-0 w-full h-3 bg-white/30">
-        <div 
-            className="h-full bg-amber-400 transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(251,191,36,0.5)]"
-            style={{ width: `${progressPercent}%` }}
-        />
+      {/* Progress Bar or Legacy Button */}
+      <div className="absolute bottom-0 w-full">
+         {isMaxLevel ? (
+             <button 
+                onClick={() => setShowRetireConfirm(true)}
+                className="w-full py-4 bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold text-lg flex items-center justify-center gap-2 hover:brightness-110 transition-all shadow-inner animate-pulse"
+             >
+                 <Medal size={20} />
+                 進入榮譽殿堂 (傳承)
+             </button>
+         ) : (
+             <div className="w-full h-3 bg-white/30">
+                <div 
+                    className="h-full bg-amber-400 transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(251,191,36,0.5)]"
+                    style={{ width: `${progressPercent}%` }}
+                />
+            </div>
+         )}
       </div>
+
+      {/* Retirement Confirmation Modal */}
+      {showRetireConfirm && (
+          <div className="absolute inset-0 z-50 bg-white/95 backdrop-blur-md p-8 flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-200">
+             <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center text-4xl mb-6 shadow-sm">
+                 <Medal size={40} className="text-amber-500" />
+             </div>
+             <h3 className="text-2xl font-bold text-slate-800 mb-2">精靈傳承</h3>
+             <p className="text-slate-500 text-center mb-8 leading-relaxed max-w-xs">
+                 恭喜！您的精靈已經達到完美型態。<br/><br/>
+                 選擇「退休」將使牠進入榮譽殿堂，並為您提供 <strong className="text-amber-600">永久金幣加成 +10%</strong>。<br/>
+                 此習慣將繼承意志，孵化出一顆新蛋（第 {habit.generation ? habit.generation + 1 : 2} 世代）。
+             </p>
+             <div className="flex flex-col gap-3 w-full max-w-xs">
+                 <button 
+                    onClick={() => {
+                        onRetire(habit.id);
+                        setShowRetireConfirm(false);
+                    }}
+                    className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl hover:scale-105 transition-transform"
+                 >
+                     <Sparkles size={18} className="text-amber-400" />
+                     確認傳承
+                 </button>
+                 <button 
+                    onClick={() => setShowRetireConfirm(false)}
+                    className="w-full py-3 text-slate-400 font-bold hover:text-slate-600"
+                 >
+                     稍後再說
+                 </button>
+             </div>
+          </div>
+      )}
 
       {/* Growth Guide Modal/Overlay */}
       {showInfo && (
@@ -141,7 +197,7 @@ const PetDisplay: React.FC<Props> = ({ habit, justStamped, className = "" }) => 
                 ) : (
                     <div className="bg-gradient-to-r from-yellow-100 to-amber-100 border border-yellow-200 rounded-2xl p-4 w-full mb-8 text-center shadow-sm">
                         <p className="text-amber-700 font-bold text-lg">🎉 已達到最高階段！</p>
-                        <p className="text-amber-600 text-sm">持續保持，創造傳奇紀錄吧！</p>
+                        <p className="text-amber-600 text-sm">您可以選擇讓精靈退休以獲得永久加成。</p>
                     </div>
                 )}
 

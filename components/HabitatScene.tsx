@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { AreaConfig, PlacedItem, PlacedPet, PetStage } from '../types';
 import { getDecorationById } from '../utils/worldData';
 import { getPetEmoji } from '../utils/petData';
@@ -90,11 +90,7 @@ const HabitatScene: React.FC<Props> = ({ area, onRemoveItem, onRemovePet, editMo
                 {editMode && (
                     <button 
                         onClick={() => onRemovePet(pet.id)}
-                        // Calculating position roughly where the pet is wandering is hard with CSS animations.
-                        // For MVP, we put the delete button on a static list or simplified overlay.
-                        // Here we try to attach it to the pet container, but the container moves.
-                        // Better UX for MVP: Just click the pet to remove in edit mode? 
-                        // Let's implement click-to-remove for simplicity in MVP edit mode.
+                        // Click logic handled below via overlay for now
                     />
                 )}
            </div>

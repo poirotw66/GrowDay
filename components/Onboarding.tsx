@@ -1,11 +1,12 @@
+
 import React, { useState } from 'react';
-import { Sparkles, ArrowRight, ArrowLeft } from 'lucide-react';
-import { STAMP_OPTIONS } from '../utils/stampIcons';
+import { Sparkles, ArrowRight, ArrowLeft, Check } from 'lucide-react';
+import { STAMP_OPTIONS, STAMP_COLORS, DEFAULT_STAMP_COLOR } from '../utils/stampIcons';
 import { PetColor } from '../types';
 import { getColorName, getColorBg } from '../utils/petData';
 
 interface Props {
-  onComplete: (name: string, icon: string, color: PetColor) => void;
+  onComplete: (name: string, icon: string, color: PetColor, stampColor: string) => void;
   isAddingNew?: boolean; // If true, change text slightly
   onCancel?: () => void;
 }
@@ -21,6 +22,7 @@ const Onboarding: React.FC<Props> = ({ onComplete, isAddingNew = false, onCancel
   const [step, setStep] = useState(1);
   const [habit, setHabit] = useState('');
   const [selectedIcon, setSelectedIcon] = useState('star');
+  const [selectedStampColor, setSelectedStampColor] = useState(DEFAULT_STAMP_COLOR);
   const [selectedColor, setSelectedColor] = useState<PetColor>('green');
 
   // Filter only icons that don't have an unlock hint (Defaults)
@@ -35,7 +37,7 @@ const Onboarding: React.FC<Props> = ({ onComplete, isAddingNew = false, onCancel
 
   const handleFinalSubmit = () => {
     if (habit.trim() && selectedIcon) {
-      onComplete(habit.trim(), selectedIcon, selectedColor);
+      onComplete(habit.trim(), selectedIcon, selectedColor, selectedStampColor);
     }
   };
 
@@ -152,18 +154,19 @@ const Onboarding: React.FC<Props> = ({ onComplete, isAddingNew = false, onCancel
           </div>
         )}
 
-        {/* Step 3: Icon Selection */}
+        {/* Step 3: Icon & Color Selection */}
         {step === 3 && (
           <div className="animate-in fade-in slide-in-from-right-4 duration-300">
              <div className="mb-6">
                 <h1 className="text-3xl font-bold mb-3 text-slate-800 tracking-tight">選擇你的打卡印章</h1>
                 <p className="text-slate-500 text-lg">
-                    最後，選一個喜歡的圖案。<br/>
+                    最後，選一個喜歡的圖案和顏色。<br/>
                     這將是你每天努力的證明。
                 </p>
              </div>
 
-             <div className="grid grid-cols-4 sm:grid-cols-5 gap-3 mb-10 max-w-lg mx-auto">
+             {/* Icon Grid */}
+             <div className="grid grid-cols-4 sm:grid-cols-5 gap-3 mb-6 max-w-lg mx-auto">
                 {availableIcons.map((option) => {
                     const Icon = option.icon;
                     const isSelected = selectedIcon === option.id;
@@ -174,12 +177,32 @@ const Onboarding: React.FC<Props> = ({ onComplete, isAddingNew = false, onCancel
                             className={`
                                 aspect-square flex flex-col items-center justify-center rounded-2xl transition-all duration-200
                                 ${isSelected 
-                                    ? 'bg-orange-500 text-white shadow-lg scale-110 ring-4 ring-orange-200' 
-                                    : 'bg-slate-50 text-slate-400 hover:bg-orange-100 hover:text-orange-500'
+                                    ? 'bg-slate-800 text-white shadow-lg scale-110 ring-4 ring-slate-200' 
+                                    : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
                                 }
                             `}
                         >
-                            <Icon size={28} fill={isSelected ? "currentColor" : "none"} />
+                            <Icon size={28} fill={isSelected ? "currentColor" : "none"} style={{ color: isSelected ? selectedStampColor : undefined }} />
+                        </button>
+                    );
+                })}
+             </div>
+             
+             {/* Color Picker */}
+             <div className="flex flex-wrap justify-center gap-3 mb-10 max-w-md mx-auto bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                {STAMP_COLORS.map((color) => {
+                    const isSelected = selectedStampColor === color.hex;
+                    return (
+                        <button
+                            key={color.id}
+                            onClick={() => setSelectedStampColor(color.hex)}
+                            className={`
+                                w-8 h-8 rounded-full transition-transform duration-200 flex items-center justify-center
+                                ${isSelected ? 'scale-125 ring-2 ring-offset-2 ring-slate-300' : 'hover:scale-110'}
+                            `}
+                            style={{ backgroundColor: color.hex }}
+                        >
+                            {isSelected && <Check size={14} className="text-white" />}
                         </button>
                     );
                 })}
@@ -194,7 +217,8 @@ const Onboarding: React.FC<Props> = ({ onComplete, isAddingNew = false, onCancel
                 </button>
                 <button
                     onClick={handleFinalSubmit}
-                    className="flex-[2] bg-gradient-to-r from-orange-400 to-amber-500 hover:from-orange-500 hover:to-amber-600 text-white font-bold py-4 px-6 rounded-2xl shadow-xl transform transition active:scale-95 tracking-wide"
+                    className="flex-[2] text-white font-bold py-4 px-6 rounded-2xl shadow-xl transform transition active:scale-95 tracking-wide"
+                    style={{ backgroundColor: selectedStampColor }}
                 >
                     開始旅程
                 </button>

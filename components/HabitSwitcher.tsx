@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { GameState } from '../types';
+import { GameState, Habit } from '../types';
 import { Plus, Book } from 'lucide-react';
 import { getColorBg } from '../utils/petData';
 
@@ -12,7 +11,7 @@ interface Props {
 }
 
 const HabitSwitcher: React.FC<Props> = ({ gameState, onSwitch, onAdd, onOpenCompendium }) => {
-  const habits = Object.values(gameState.habits);
+  const habits: Habit[] = Object.values(gameState.habits);
 
   return (
     <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide items-center">

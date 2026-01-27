@@ -1,11 +1,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { GameState, DayLog, Habit, PetColor, WorldState, PlacedItem, PlacedPet, PetStage } from '../types';
-import { calculateLevel, calculateStreak } from '../utils/gameLogic';
+import { GameState, DayLog, Habit, PetColor, WorldState, PlacedItem, PlacedPet, PetStage, RetiredPet, CalendarStyle } from '../types';
+import { calculateLevel, calculateStreak, STAGE_THRESHOLDS } from '../utils/gameLogic';
 import { getTodayString } from '../utils/dateUtils';
 import { assignRandomPet, getPetById } from '../utils/petData';
-import { getDefaultUnlockedIcons } from '../utils/stampIcons';
+import { getDefaultUnlockedIcons, DEFAULT_STAMP_COLOR } from '../utils/stampIcons';
 import { INITIAL_AREAS, DECORATION_ITEMS } from '../utils/worldData';
+import { playUnlockSound } from '../utils/audio';
 
 const STORAGE_KEY = 'growday_save_v2'; 
 const OLD_STORAGE_KEY = 'growday_save_v1';
@@ -21,7 +22,45 @@ const INITIAL_STATE: GameState = {
   world: {
     unlockedAreas: ['home'],
     areas: JSON.parse(JSON.stringify(INITIAL_AREAS)) // Deep copy to avoid reference issues
-  }
+  },
+  retiredPets: [],
+  calendarStyle: 'handdrawn' // Default to the warm style
+};
+
+// Helper to calculate monthly count
+const getHabitMonthlyCount = (habit: Habit, year: number, month: number) => {
+  let count = 0;
+  Object.values(habit.logs).forEach((log: DayLog) => {
+    const d = new Date(log.date);
+    if (d.getFullYear() === year && d.getMonth() === month && log.stamped) {
+      count++;
+    }
+  });
+  return count;
+};
+
+// Helper to check for new unlocks
+const checkUnlockableIcons = (habit: Habit, currentUnlocked: string[], monthlyCount: number): string[] => {
+  const newUnlocked = [...currentUnlocked];
+  
+  const tryUnlock = (id: string) => {
+    if (!newUnlocked.includes(id)) newUnlocked.push(id);
+  };
+
+  // Experience Unlocks
+  if ((habit.totalExp / 10) >= 3) tryUnlock('feather');
+  if (habit.currentLevel >= 10) tryUnlock('crown');
+
+  // Streak Unlocks
+  if (habit.currentStreak >= 3) tryUnlock('fire');
+  if (habit.currentStreak >= 7) tryUnlock('zap');    // 7-day streak unlocks Zap icon
+  if (habit.currentStreak >= 30) tryUnlock('trophy');
+  if (habit.currentStreak >= 100) tryUnlock('diamond');
+
+  // Frequency Unlocks
+  if (monthlyCount >= 20) tryUnlock('anchor');
+
+  return newUnlocked;
 };
 
 export const useHabitEngine = () => {
@@ -39,19 +78,38 @@ export const useHabitEngine = () => {
         // Recalculate streaks for all habits
         const today = getTodayString();
         const updatedHabits = { ...parsed.habits };
+        let loadedUnlockedIcons = parsed.unlockedIcons || getDefaultUnlockedIcons();
         
+        const currentMonth = new Date().getMonth();
+        const currentYear = new Date().getFullYear();
+
         Object.keys(updatedHabits).forEach(key => {
           const habit = updatedHabits[key];
           habit.currentStreak = calculateStreak(habit.logs, today);
+          
+          // Ensure stampColor exists (Migration)
+          if (!habit.stampColor) {
+              habit.stampColor = DEFAULT_STAMP_COLOR;
+          }
+          // Ensure generation exists (Migration)
+          if (typeof habit.generation !== 'number') {
+              habit.generation = 1;
+          }
+
+          // Check for retroactive unlocks based on recalculated streaks
+          const monthlyCount = getHabitMonthlyCount(habit, currentYear, currentMonth);
+          loadedUnlockedIcons = checkUnlockableIcons(habit, loadedUnlockedIcons, monthlyCount);
         });
 
-        // Ensure Phase 3 fields exist for existing users
+        // Ensure new fields exist for existing users (Phase 3 & 4 & 5)
         const updatedState = {
            ...INITIAL_STATE, // Start with defaults
            ...parsed,        // Overwrite with saved data
            habits: updatedHabits,
-           // Explicitly merge world state if it exists partially or not at all
-           world: parsed.world ? { ...INITIAL_STATE.world, ...parsed.world } : INITIAL_STATE.world
+           unlockedIcons: loadedUnlockedIcons,
+           world: parsed.world ? { ...INITIAL_STATE.world, ...parsed.world } : INITIAL_STATE.world,
+           retiredPets: parsed.retiredPets || [],
+           calendarStyle: parsed.calendarStyle || 'handdrawn'
         };
 
         setGameState(updatedState);
@@ -78,6 +136,7 @@ export const useHabitEngine = () => {
           id: newId,
           name: parsedV1.habitName || '我的習慣',
           stampIcon: parsedV1.stampIcon || 'star',
+          stampColor: DEFAULT_STAMP_COLOR,
           petColor: defaultColor,
           petId: assignedPet,
           startDate: parsedV1.startDate || getTodayString(),
@@ -85,7 +144,8 @@ export const useHabitEngine = () => {
           totalExp: parsedV1.totalExp || 0,
           currentLevel: parsedV1.currentLevel || 1,
           currentStreak: parsedV1.currentStreak || 0,
-          longestStreak: parsedV1.longestStreak || 0
+          longestStreak: parsedV1.longestStreak || 0,
+          generation: 1
         };
 
         const newState: GameState = {
@@ -114,7 +174,7 @@ export const useHabitEngine = () => {
   }, [gameState, isLoaded]);
 
   // Create a new habit
-  const addHabit = useCallback((name: string, icon: string, color: PetColor) => {
+  const addHabit = useCallback((name: string, icon: string, color: PetColor, stampColor: string = DEFAULT_STAMP_COLOR) => {
     const newId = 'habit_' + Date.now();
     const assignedPet = assignRandomPet(color);
     const today = getTodayString();
@@ -123,6 +183,7 @@ export const useHabitEngine = () => {
       id: newId,
       name,
       stampIcon: icon,
+      stampColor: stampColor,
       petColor: color,
       petId: assignedPet,
       startDate: today,
@@ -130,7 +191,8 @@ export const useHabitEngine = () => {
       totalExp: 0,
       currentLevel: 1,
       currentStreak: 0,
-      longestStreak: 0
+      longestStreak: 0,
+      generation: 1
     };
 
     setGameState(prev => ({
@@ -155,7 +217,7 @@ export const useHabitEngine = () => {
     });
   }, []);
 
-  const updateStampIcon = useCallback((icon: string) => {
+  const updateStampStyle = useCallback((icon: string, color: string) => {
     setGameState(prev => {
       if (!prev.activeHabitId) return prev;
       return {
@@ -164,44 +226,22 @@ export const useHabitEngine = () => {
             ...prev.habits,
             [prev.activeHabitId]: {
                 ...prev.habits[prev.activeHabitId],
-                stampIcon: icon
+                stampIcon: icon,
+                stampColor: color
             }
         }
       };
     });
   }, []);
 
-  // Helper to check for new unlocks
-  const checkUnlockableIcons = (habit: Habit, currentUnlocked: string[], monthlyCount: number): string[] => {
-    const newUnlocked = [...currentUnlocked];
-    
-    const tryUnlock = (id: string) => {
-      if (!newUnlocked.includes(id)) newUnlocked.push(id);
-    };
+  const setCalendarStyle = useCallback((style: CalendarStyle) => {
+      setGameState(prev => ({
+          ...prev,
+          calendarStyle: style
+      }));
+  }, []);
 
-    if ((habit.totalExp / 10) >= 3) tryUnlock('feather');
-    if (habit.currentStreak >= 3) tryUnlock('fire');
-    if (habit.currentStreak >= 7) tryUnlock('zap');
-    if (habit.currentStreak >= 30) tryUnlock('trophy');
-    if (habit.currentStreak >= 100) tryUnlock('diamond');
-    if (habit.currentLevel >= 10) tryUnlock('crown');
-    if (monthlyCount >= 20) tryUnlock('anchor');
-
-    return newUnlocked;
-  };
-
-  const getHabitMonthlyCount = (habit: Habit, year: number, month: number) => {
-    let count = 0;
-    Object.values(habit.logs).forEach((log: DayLog) => {
-      const d = new Date(log.date);
-      if (d.getFullYear() === year && d.getMonth() === month && log.stamped) {
-        count++;
-      }
-    });
-    return count;
-  };
-
-  const stampToday = useCallback(() => {
+  const stampToday = useCallback((x?: number, y?: number, rotation?: number) => {
     const today = getTodayString();
     
     setGameState(prev => {
@@ -221,7 +261,9 @@ export const useHabitEngine = () => {
           date: today,
           stamped: true,
           timestamp: Date.now(),
-          icon: currentHabit.stampIcon
+          icon: currentHabit.stampIcon,
+          color: currentHabit.stampColor,
+          position: (x !== undefined && y !== undefined && rotation !== undefined) ? { x, y, rotation } : undefined
         }
       };
 
@@ -242,6 +284,12 @@ export const useHabitEngine = () => {
       const monthlyCount = getHabitMonthlyCount(updatedHabit, currentYear, currentMonth);
       const updatedUnlockedIcons = checkUnlockableIcons(updatedHabit, prev.unlockedIcons, monthlyCount);
 
+      // --- Coin Calculation with Legacy Bonus ---
+      const baseCoin = 20;
+      // 10% bonus per retired pet
+      const multiplier = 1 + (prev.retiredPets.length * 0.1); 
+      const earnedCoins = Math.floor(baseCoin * multiplier);
+
       return {
         ...prev,
         habits: {
@@ -249,9 +297,59 @@ export const useHabitEngine = () => {
             [prev.activeHabitId]: updatedHabit
         },
         unlockedIcons: updatedUnlockedIcons,
-        coins: prev.coins + 20 // Earn 20 coins per stamp
+        coins: prev.coins + earnedCoins
       };
     });
+  }, []);
+
+  // --- Phase 4: Legacy / Retirement ---
+
+  const retireHabit = useCallback((habitId: string) => {
+      setGameState(prev => {
+          const habit = prev.habits[habitId];
+          if (!habit || habit.currentLevel < STAGE_THRESHOLDS.ADULT) return prev;
+
+          const today = getTodayString();
+
+          // 1. Create Retired Record
+          const retiredPet: RetiredPet = {
+              id: `retired_${Date.now()}`,
+              originalHabitId: habit.id,
+              petId: habit.petId,
+              name: habit.name,
+              retiredDate: today,
+              generation: habit.generation || 1,
+              bonusMultiplier: 0.1 // 10% bonus
+          };
+
+          // 2. Generate New Pet (Same Color Pool)
+          const newPetId = assignRandomPet(habit.petColor);
+
+          // 3. Reset Habit Stats (But keep logs and streaks!)
+          // We reset Level and EXP.
+          const newHabit: Habit = {
+              ...habit,
+              petId: newPetId,
+              totalExp: 0,
+              currentLevel: 1,
+              generation: (habit.generation || 1) + 1,
+          };
+
+          playUnlockSound();
+
+          return {
+              ...prev,
+              habits: {
+                  ...prev.habits,
+                  [habitId]: newHabit
+              },
+              retiredPets: [...prev.retiredPets, retiredPet],
+              // Add the new pet to compendium if not already there
+              unlockedPets: prev.unlockedPets.includes(newPetId) 
+                  ? prev.unlockedPets 
+                  : [...prev.unlockedPets, newPetId]
+          };
+      });
   }, []);
 
   // --- Phase 3 Actions ---
@@ -401,7 +499,10 @@ export const useHabitEngine = () => {
           date: dateStr,
           stamped: true,
           timestamp: Date.now(),
-          icon: currentHabit.stampIcon
+          icon: currentHabit.stampIcon,
+          color: currentHabit.stampColor,
+          // Debug stamps use default center position
+          position: { x: 50, y: 50, rotation: (Math.random() * 30 - 15) } 
         }
       };
 
@@ -451,7 +552,9 @@ export const useHabitEngine = () => {
             date: dateStr,
             stamped: true,
             timestamp: Date.now(),
-            icon: currentHabit.stampIcon
+            icon: currentHabit.stampIcon,
+            color: currentHabit.stampColor,
+            position: { x: 50, y: 50, rotation: (Math.random() * 30 - 15) }
           };
           addedExp += 10;
         }
@@ -509,25 +612,49 @@ export const useHabitEngine = () => {
       }
   }, []);
 
+  const importSaveData = useCallback((jsonData: string) => {
+    try {
+        const parsed = JSON.parse(jsonData);
+        // Basic validation
+        if (!parsed.habits || !parsed.world) {
+            alert('檔案格式錯誤：找不到必要的遊戲資料');
+            return false;
+        }
+
+        // Apply
+        setGameState(parsed);
+        alert('匯入成功！世界已更新。');
+        return true;
+    } catch (e) {
+        console.error(e);
+        alert('匯入失敗：檔案格式不正確');
+        return false;
+    }
+  }, []);
+
   return {
     gameState,
     activeHabit: gameState.activeHabitId ? gameState.habits[gameState.activeHabitId] : null,
     isLoaded,
     addHabit,
     switchHabit,
-    updateStampIcon,
+    updateStampStyle,
+    setCalendarStyle,
     stampToday,
     debugStampDate,
     debugStampRange,
     isTodayStamped,
     getMonthlyCount,
     resetProgress,
+    importSaveData, // Exposed for App.tsx
     // Phase 3
     buyDecoration,
     placeDecoration,
     removeDecoration,
     placePetInArea,
     removePetFromArea,
-    unlockArea
+    unlockArea,
+    // Phase 4
+    retireHabit
   };
 };

@@ -1,15 +1,19 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useHabitEngine } from './hooks/useHabitEngine';
 import PetDisplay from './components/PetDisplay';
 import CalendarView from './components/CalendarView';
+import OverallCalendarView from './components/OverallCalendarView';
 import Onboarding from './components/Onboarding';
 import StatsBar from './components/StatsBar';
 import HabitSwitcher from './components/HabitSwitcher';
 import Compendium from './components/Compendium';
 import WorldView from './components/WorldView';
-import { STAMP_OPTIONS } from './utils/stampIcons';
-import { Settings, RefreshCw, Sprout, FlaskConical, Check, CalendarRange, Stamp, Lock, Map as MapIcon, Home } from 'lucide-react';
+import HallOfFame from './components/HallOfFame';
+import { STAMP_OPTIONS, STAMP_COLORS } from './utils/stampIcons';
+import { Settings, RefreshCw, Sprout, FlaskConical, Check, CalendarRange, Stamp, Lock, Map as MapIcon, Calendar as CalendarIcon, LayoutGrid, Download, Upload, Medal, Palette, ChevronRight } from 'lucide-react';
+import { playStampSound } from './utils/audio';
+import { CalendarStyle } from './types';
 
 function App() {
   const { 
@@ -18,30 +22,41 @@ function App() {
     isLoaded, 
     addHabit, 
     switchHabit,
-    updateStampIcon,
+    updateStampStyle,
+    setCalendarStyle,
     stampToday, 
     debugStampDate,
     debugStampRange,
     isTodayStamped, 
     getMonthlyCount,
     resetProgress,
+    importSaveData,
     // Phase 3
     buyDecoration,
     placeDecoration,
     removeDecoration,
     placePetInArea,
     removePetFromArea,
-    unlockArea
+    unlockArea,
+    // Phase 4
+    retireHabit
   } = useHabitEngine();
 
   const [justStamped, setJustStamped] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showIconSelector, setShowIconSelector] = useState(false);
+  const [showStyleSelector, setShowStyleSelector] = useState(false); // New state for style selector
   const [showAddModal, setShowAddModal] = useState(false);
   const [showCompendium, setShowCompendium] = useState(false);
+  const [showHallOfFame, setShowHallOfFame] = useState(false);
+  
+  // File Input Ref
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Navigation State
   const [currentView, setCurrentView] = useState<'habits' | 'world'>('habits');
+  // Calendar Toggle State
+  const [calendarMode, setCalendarMode] = useState<'single' | 'overall'>('single');
 
   // Debug states
   const [debugDate, setDebugDate] = useState('');
@@ -52,7 +67,7 @@ function App() {
 
   // Initial Onboarding (if no habits exist)
   if (!gameState.isOnboarded) {
-    return <Onboarding onComplete={(name, icon, color) => addHabit(name, icon, color)} />;
+    return <Onboarding onComplete={(name, icon, color, stampColor) => addHabit(name, icon, color, stampColor)} />;
   }
 
   // Safety check
@@ -61,9 +76,45 @@ function App() {
   }
 
   const handleStamp = () => {
+    playStampSound();
     stampToday();
     setJustStamped(true);
     setTimeout(() => setJustStamped(false), 2000);
+  };
+
+  const handleExportData = () => {
+    const dataStr = JSON.stringify(gameState);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `growday_backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportClick = () => {
+      if (confirm('匯入備份將會覆蓋目前的進度，確定要繼續嗎？')) {
+          fileInputRef.current?.click();
+      }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+          if (event.target?.result) {
+              const success = importSaveData(event.target.result as string);
+              if (success) {
+                  setShowSettings(false);
+              }
+          }
+      };
+      reader.readAsText(file);
+      // Reset input so same file can be selected again if needed
+      e.target.value = '';
   };
 
   const handleDebugStamp = (e: React.FormEvent) => {
@@ -92,6 +143,14 @@ function App() {
 
   const currentMonthCount = getMonthlyCount(new Date().getFullYear(), new Date().getMonth());
 
+  const styles: {id: CalendarStyle, label: string}[] = [
+      { id: 'minimal', label: '極簡風格' },
+      { id: 'handdrawn', label: '手繪溫暖' },
+      { id: 'cny', label: '新春禮節' },
+      { id: 'japanese', label: '日式和風' },
+      { id: 'american', label: '美式日記' },
+  ];
+
   // --- WORLD VIEW RENDER ---
   if (currentView === 'world') {
       return (
@@ -116,11 +175,20 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 p-4 lg:p-8 relative">
       
+      {/* Hidden File Input for Import */}
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleFileChange} 
+        accept=".json" 
+        style={{ display: 'none' }} 
+      />
+
       {/* Add New Habit Modal */}
       {showAddModal && (
         <Onboarding 
-            onComplete={(name, icon, color) => {
-                addHabit(name, icon, color);
+            onComplete={(name, icon, color, stampColor) => {
+                addHabit(name, icon, color, stampColor);
                 setShowAddModal(false);
             }} 
             isAddingNew={true}
@@ -133,6 +201,14 @@ function App() {
           <Compendium 
             unlockedPetIds={gameState.unlockedPets} 
             onClose={() => setShowCompendium(false)} 
+          />
+      )}
+
+      {/* Hall of Fame Modal */}
+      {showHallOfFame && (
+          <HallOfFame 
+            retiredPets={gameState.retiredPets}
+            onClose={() => setShowHallOfFame(false)}
           />
       )}
 
@@ -167,71 +243,139 @@ function App() {
             {/* Settings Dropdown */}
             {showSettings && (
                 <div className="absolute right-0 top-14 bg-white rounded-2xl shadow-xl p-2 w-80 border border-slate-100 animate-in fade-in slide-in-from-top-2 overflow-hidden max-h-[80vh] overflow-y-auto z-50">
-                    <div className="px-4 py-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">設定</div>
+                    <div className="px-4 py-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">資料管理</div>
                     
-                    {/* Reset Button */}
+                    {/* Backup & Restore */}
+                    <div className="flex gap-2 px-2 mb-2">
+                        <button 
+                           onClick={handleExportData}
+                           className="flex-1 flex flex-col items-center justify-center gap-1 bg-slate-50 hover:bg-slate-100 p-3 rounded-xl transition-colors text-slate-600 text-xs font-bold"
+                        >
+                            <Download size={18} />
+                            匯出備份
+                        </button>
+                        <button 
+                           onClick={handleImportClick}
+                           className="flex-1 flex flex-col items-center justify-center gap-1 bg-slate-50 hover:bg-slate-100 p-3 rounded-xl transition-colors text-slate-600 text-xs font-bold"
+                        >
+                            <Upload size={18} />
+                            匯入備份
+                        </button>
+                    </div>
+
+                    <div className="px-4 py-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 mt-2">設定</div>
+                    
+                    {/* Calendar Style Selector */}
                     <button 
-                    onClick={resetProgress}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-500 hover:bg-red-50 rounded-xl transition-colors font-medium mb-1"
+                        onClick={() => setShowStyleSelector(!showStyleSelector)}
+                        className="w-full flex items-center justify-between px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 rounded-xl transition-colors font-medium"
                     >
-                    <RefreshCw size={16} />
-                    重置所有資料
+                        <div className="flex items-center gap-3">
+                            <Palette size={16} />
+                            日曆外觀風格
+                        </div>
+                        <ChevronRight size={16} className={`transition-transform ${showStyleSelector ? 'rotate-90' : ''}`} />
+                    </button>
+
+                    {showStyleSelector && (
+                        <div className="bg-slate-50 p-2 m-2 rounded-xl border border-slate-100 space-y-1">
+                            {styles.map(style => (
+                                <button
+                                    key={style.id}
+                                    onClick={() => setCalendarStyle(style.id)}
+                                    className={`w-full text-left px-3 py-2 rounded-lg text-sm font-bold flex justify-between items-center ${gameState.calendarStyle === style.id ? 'bg-white text-orange-500 shadow-sm border border-orange-100' : 'text-slate-500 hover:bg-slate-200'}`}
+                                >
+                                    {style.label}
+                                    {gameState.calendarStyle === style.id && <Check size={14} />}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Hall of Fame */}
+                    <button 
+                        onClick={() => { setShowHallOfFame(true); setShowSettings(false); }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-amber-600 hover:bg-amber-50 rounded-xl transition-colors font-medium mb-1"
+                    >
+                        <Medal size={16} />
+                        榮譽殿堂 (退休紀錄)
                     </button>
 
                     {/* Change Icon Toggle */}
                     <button 
-                    onClick={() => setShowIconSelector(!showIconSelector)}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 rounded-xl transition-colors font-medium"
+                        onClick={() => setShowIconSelector(!showIconSelector)}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 rounded-xl transition-colors font-medium"
                     >
-                    <Stamp size={16} />
-                    更換當前打卡印章
+                        <Stamp size={16} />
+                        更換打卡樣式
                     </button>
 
                     {/* Icon Selector Grid */}
                     {showIconSelector && (
-                    <div className="bg-slate-50 p-3 m-2 rounded-xl grid grid-cols-5 gap-2 border border-slate-100">
-                        {STAMP_OPTIONS.map((option) => {
-                            const Icon = option.icon;
-                            const isSelected = activeHabit.stampIcon === option.id;
-                            const isUnlocked = gameState.unlockedIcons?.includes(option.id);
+                    <div className="bg-slate-50 p-3 m-2 rounded-xl border border-slate-100">
+                        {/* Icons */}
+                        <div className="grid grid-cols-5 gap-2 mb-4">
+                            {STAMP_OPTIONS.map((option) => {
+                                const Icon = option.icon;
+                                const isSelected = activeHabit.stampIcon === option.id;
+                                const isUnlocked = gameState.unlockedIcons?.includes(option.id);
 
-                            return (
-                            <button
-                                key={option.id}
-                                disabled={!isUnlocked}
-                                onClick={() => isUnlocked && updateStampIcon(option.id)}
-                                className={`
-                                    relative aspect-square flex items-center justify-center rounded-lg transition-all group
-                                    ${isSelected 
-                                        ? 'bg-orange-500 text-white shadow-md' 
-                                        : isUnlocked
-                                            ? 'bg-white text-slate-400 hover:bg-orange-100 hover:text-orange-500'
-                                            : 'bg-slate-100 text-slate-300 cursor-not-allowed'
-                                    }
-                                `}
-                                title={isUnlocked ? option.label : option.unlockHint}
-                            >
-                                <Icon size={18} fill={isSelected ? "currentColor" : "none"} />
-                                
-                                {/* Lock Overlay */}
-                                {!isUnlocked && (
-                                    <div className="absolute inset-0 flex items-center justify-center bg-slate-50/50 rounded-lg">
-                                        <Lock size={12} className="text-slate-400" />
-                                    </div>
-                                )}
+                                return (
+                                <button
+                                    key={option.id}
+                                    disabled={!isUnlocked}
+                                    onClick={() => isUnlocked && updateStampStyle(option.id, activeHabit.stampColor)}
+                                    className={`
+                                        relative aspect-square flex items-center justify-center rounded-lg transition-all group
+                                        ${isSelected 
+                                            ? 'bg-slate-800 text-white shadow-md' 
+                                            : isUnlocked
+                                                ? 'bg-white text-slate-400 hover:bg-slate-100'
+                                                : 'bg-slate-100 text-slate-300 cursor-not-allowed'
+                                        }
+                                    `}
+                                    title={isUnlocked ? option.label : option.unlockHint}
+                                >
+                                    <Icon size={18} fill={isSelected ? "currentColor" : "none"} />
+                                    
+                                    {/* Lock Overlay */}
+                                    {!isUnlocked && (
+                                        <div className="absolute inset-0 flex items-center justify-center bg-slate-50/50 rounded-lg">
+                                            <Lock size={12} className="text-slate-400" />
+                                        </div>
+                                    )}
+                                </button>
+                                );
+                            })}
+                        </div>
 
-                                {/* Hover Tooltip for Locked Items */}
-                                {!isUnlocked && (
-                                    <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-32 bg-slate-800 text-white text-[10px] p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 text-center shadow-xl">
-                                        {option.unlockHint}
-                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
-                                    </div>
-                                )}
-                            </button>
-                            );
-                        })}
+                        {/* Colors */}
+                        <div className="flex flex-wrap gap-2 justify-center border-t border-slate-200 pt-3">
+                            {STAMP_COLORS.map(color => {
+                                const isSelected = activeHabit.stampColor === color.hex;
+                                return (
+                                    <button
+                                        key={color.id}
+                                        onClick={() => updateStampStyle(activeHabit.stampIcon, color.hex)}
+                                        className={`w-6 h-6 rounded-full transition-transform ${isSelected ? 'scale-125 ring-2 ring-slate-300 ring-offset-1' : 'hover:scale-110'}`}
+                                        style={{ backgroundColor: color.hex }}
+                                    >
+                                        {isSelected && <Check size={10} className="text-white mx-auto" />}
+                                    </button>
+                                )
+                            })}
+                        </div>
                     </div>
                     )}
+
+                    {/* Reset Button */}
+                    <button 
+                        onClick={resetProgress}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-500 hover:bg-red-50 rounded-xl transition-colors font-medium mb-1"
+                    >
+                        <RefreshCw size={16} />
+                        重置所有資料
+                    </button>
 
                     {/* Developer Tools Section */}
                     <div className="border-t border-slate-100 my-2 pt-2">
@@ -319,23 +463,50 @@ function App() {
             habit={activeHabit} 
             justStamped={justStamped} 
             className="h-full w-full shadow-lg border border-slate-100"
+            onRetire={retireHabit}
           />
         </section>
 
         {/* Right Column: Stats & Calendar (Taking up 5 columns on desktop) */}
         <section className="lg:col-span-5 flex flex-col gap-6 lg:h-full">
-          {/* Top: Stats */}
+          {/* Top: Stats (Only for single habit, but we keep it here as context) */}
           <div className="flex-shrink-0">
             <StatsBar habit={activeHabit} monthlyCount={currentMonthCount} />
           </div>
 
+          {/* Calendar Toggle */}
+          <div className="flex justify-end px-2 -mb-2 z-10">
+              <div className="bg-slate-100 p-1 rounded-xl flex gap-1 shadow-inner">
+                  <button 
+                     onClick={() => setCalendarMode('single')}
+                     className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${calendarMode === 'single' ? 'bg-white text-orange-500 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                  >
+                      <CalendarIcon size={14} /> 單項
+                  </button>
+                  <button 
+                     onClick={() => setCalendarMode('overall')}
+                     className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${calendarMode === 'overall' ? 'bg-white text-indigo-500 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                  >
+                      <LayoutGrid size={14} /> 整體
+                  </button>
+              </div>
+          </div>
+
           {/* Bottom: Calendar */}
           <div className="flex-1 min-h-[450px]">
-            <CalendarView 
-              habit={activeHabit} 
-              onStamp={handleStamp}
-              isTodayStamped={isTodayStamped()}
-            />
+             {calendarMode === 'single' ? (
+                <CalendarView 
+                  habit={activeHabit} 
+                  onStamp={handleStamp}
+                  isTodayStamped={isTodayStamped()}
+                  style={gameState.calendarStyle} // Pass the style
+                />
+             ) : (
+                <OverallCalendarView 
+                    habits={gameState.habits} 
+                    style={gameState.calendarStyle} // Pass the style
+                />
+             )}
           </div>
         </section>
 

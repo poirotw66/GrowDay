@@ -5,6 +5,12 @@ export interface DayLog {
   stamped: boolean;
   timestamp: number;
   icon?: string; // Optional: The specific icon ID used for this day
+  color?: string; // Optional: The specific color hex used for this day
+  position?: {
+    x: number; // Percentage 0-100
+    y: number; // Percentage 0-100
+    rotation: number; // Degrees -20 to 20
+  };
 }
 
 export type PetColor = 'red' | 'blue' | 'green' | 'purple';
@@ -22,11 +28,23 @@ export interface PetDefinition {
   description: string;
 }
 
+// Legacy System: A pet that has reached max level and retired
+export interface RetiredPet {
+  id: string; // Unique ID for this specific retired instance
+  originalHabitId: string;
+  petId: string; // Species ID
+  name: string; // Habit Name at time of retirement
+  retiredDate: string;
+  generation: number;
+  bonusMultiplier: number; // e.g. 0.1 for 10%
+}
+
 // A single habit instance
 export interface Habit {
   id: string;
   name: string;
   stampIcon: string;
+  stampColor: string; // Hex color for the stamp
   petColor: PetColor;
   petId: string; // Which specific pet from the pool was assigned
   startDate: string;
@@ -35,6 +53,7 @@ export interface Habit {
   currentLevel: number;
   currentStreak: number;
   longestStreak: number;
+  generation: number; // How many times has this habit been reborn? Default 1
 }
 
 // --- PHASE 3: DECORATION & WORLD ---
@@ -81,6 +100,8 @@ export interface WorldState {
 
 // ------------------------------------
 
+export type CalendarStyle = 'minimal' | 'handdrawn' | 'cny' | 'japanese' | 'american';
+
 // Define the main state of the user's progress
 export interface GameState {
   habits: Record<string, Habit>; // Map of ID to Habit
@@ -93,6 +114,12 @@ export interface GameState {
   coins: number;
   inventory: string[]; // List of Item IDs owned
   world: WorldState;
+
+  // Phase 4: Legacy
+  retiredPets: RetiredPet[];
+  
+  // Phase 5: Customization
+  calendarStyle: CalendarStyle;
 }
 
 // Define the visual stages of the pet

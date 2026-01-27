@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { 
   Star, 
@@ -76,6 +77,21 @@ export const STAMP_OPTIONS: StampOption[] = [
   { id: 'trophy', label: '冠軍', icon: Trophy, unlockHint: '連續打卡 30 天' },
   { id: 'diamond', label: '永恆', icon: Diamond, unlockHint: '連續打卡 100 天' },
 ];
+
+export const STAMP_COLORS = [
+  { id: 'orange', hex: '#f97316', bgClass: 'bg-orange-500' },
+  { id: 'red', hex: '#ef4444', bgClass: 'bg-red-500' },
+  { id: 'amber', hex: '#f59e0b', bgClass: 'bg-amber-500' },
+  { id: 'green', hex: '#22c55e', bgClass: 'bg-green-500' },
+  { id: 'teal', hex: '#14b8a6', bgClass: 'bg-teal-500' },
+  { id: 'blue', hex: '#3b82f6', bgClass: 'bg-blue-500' },
+  { id: 'indigo', hex: '#6366f1', bgClass: 'bg-indigo-500' },
+  { id: 'purple', hex: '#a855f7', bgClass: 'bg-purple-500' },
+  { id: 'pink', hex: '#ec4899', bgClass: 'bg-pink-500' },
+  { id: 'slate', hex: '#64748b', bgClass: 'bg-slate-500' },
+];
+
+export const DEFAULT_STAMP_COLOR = '#f97316';
 
 export const getStampIcon = (id: string) => {
   return STAMP_ICONS[id] || Star;
