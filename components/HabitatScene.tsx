@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { AreaConfig, PlacedItem, PlacedPet, PetStage } from '../types';
 import { getDecorationById } from '../utils/worldData';
 import { getPetEmoji } from '../utils/petData';
@@ -11,6 +11,124 @@ interface Props {
   onRemovePet: (id: string) => void;
   editMode: boolean;
 }
+
+// --- Interactive Space Background Component ---
+const SpaceParticles = () => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let width = canvas.width = canvas.offsetWidth;
+    let height = canvas.height = canvas.offsetHeight;
+    let animationFrameId: number;
+
+    // Mouse state
+    const mouse = { x: -1000, y: -1000 }; // Start off-screen
+
+    // Particle initialization
+    const particleCount = 100;
+    const particles = Array.from({ length: particleCount }, () => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      size: Math.random() * 2 + 0.5,
+      baseX: Math.random() * width,
+      baseY: Math.random() * height,
+      density: (Math.random() * 30) + 1,
+      opacity: Math.random(),
+      twinkleSpeed: Math.random() * 0.02 + 0.005
+    }));
+
+    const handleResize = () => {
+      width = canvas.width = canvas.parentElement?.offsetWidth || window.innerWidth;
+      height = canvas.height = canvas.parentElement?.offsetHeight || window.innerHeight;
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      mouse.x = e.clientX - rect.left;
+      mouse.y = e.clientY - rect.top;
+    };
+
+    const handleMouseLeave = () => {
+        mouse.x = -1000;
+        mouse.y = -1000;
+    };
+
+    window.addEventListener('resize', handleResize);
+    // Attach listener to parent or window, here we use canvas specific interaction
+    // Note: CSS pointer-events-none might block this if set on canvas, 
+    // but we want interaction, so we allow events on canvas or track via window.
+    // Since items are on top, we'll track via window for smoother parallax 
+    // but calculate relative to canvas for the connection effect.
+    window.addEventListener('mousemove', handleMouseMove);
+    
+    // Animation Loop
+    const animate = () => {
+      ctx.clearRect(0, 0, width, height);
+      
+      // Parallax center point
+      const centerX = width / 2;
+      const centerY = height / 2;
+      
+      // Mouse offset from center (for parallax)
+      // Clamped to avoid extreme shifts if mouse is far outside
+      const mouseOffsetX = (mouse.x - centerX) * 0.05;
+      const mouseOffsetY = (mouse.y - centerY) * 0.05;
+
+      particles.forEach(p => {
+        // 1. Twinkle Effect
+        p.opacity += p.twinkleSpeed;
+        if (p.opacity > 1 || p.opacity < 0.2) p.twinkleSpeed *= -1;
+
+        // 2. Parallax Movement
+        // Move particles opposite to mouse to create depth. 
+        // Higher density = closer = moves more.
+        const moveX = mouseOffsetX * (p.density / 30) * -1; 
+        const moveY = mouseOffsetY * (p.density / 30) * -1;
+        
+        const drawX = (p.baseX + moveX + width * 2) % width;
+        const drawY = (p.baseY + moveY + height * 2) % height;
+
+        // Draw Star
+        ctx.beginPath();
+        ctx.arc(drawX, drawY, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${Math.max(0.1, Math.min(1, p.opacity))})`;
+        ctx.fill();
+
+        // 3. Constellation Effect (Connect to mouse)
+        const dx = mouse.x - drawX;
+        const dy = mouse.y - drawY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const connectDistance = 120;
+
+        if (distance < connectDistance) {
+          ctx.beginPath();
+          ctx.strokeStyle = `rgba(255, 255, 255, ${1 - distance / connectDistance})`;
+          ctx.lineWidth = 0.5;
+          ctx.moveTo(mouse.x, mouse.y);
+          ctx.lineTo(drawX, drawY);
+          ctx.stroke();
+        }
+      });
+
+      animationFrameId = requestAnimationFrame(animate);
+    };
+
+    animate();
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('mousemove', handleMouseMove);
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
+
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />;
+};
 
 const WanderingPet: React.FC<{ pet: PlacedPet }> = ({ pet }) => {
   const emoji = getPetEmoji(pet.petId, pet.stage);
@@ -50,10 +168,8 @@ const HabitatScene: React.FC<Props> = ({ area, onRemoveItem, onRemovePet, editMo
   return (
     <div className={`relative w-full h-[500px] lg:h-[600px] rounded-[2.5rem] overflow-hidden shadow-inner border-4 border-slate-200 ${area.backgroundClass} transition-colors duration-500`}>
        
-       {/* Background Decoration Elements (Optional based on area) */}
-       {area.id === 'space' && (
-           <div className="absolute inset-0 opacity-50 animate-pulse">✨ . ✦ . * . ✨</div>
-       )}
+       {/* Background Decoration Elements */}
+       {area.id === 'space' && <SpaceParticles />}
 
        {/* Placed Furniture */}
        {area.placedItems.map(item => {
@@ -112,7 +228,7 @@ const HabitatScene: React.FC<Props> = ({ area, onRemoveItem, onRemovePet, editMo
         ))}
 
        {/* Floor / Ground visual anchor */}
-       <div className="absolute bottom-0 w-full h-1/4 bg-black/5 backdrop-blur-[1px] rounded-b-[2rem]"></div>
+       <div className="absolute bottom-0 w-full h-1/4 bg-black/5 backdrop-blur-[1px] rounded-b-[2rem] pointer-events-none"></div>
     </div>
   );
 };

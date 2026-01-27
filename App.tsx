@@ -10,9 +10,11 @@ import HabitSwitcher from './components/HabitSwitcher';
 import Compendium from './components/Compendium';
 import WorldView from './components/WorldView';
 import HallOfFame from './components/HallOfFame';
+import AchievementList from './components/AchievementList';
+import AchievementToast from './components/AchievementToast';
 import { STAMP_OPTIONS, STAMP_COLORS } from './utils/stampIcons';
-import { Settings, RefreshCw, Sprout, FlaskConical, Check, CalendarRange, Stamp, Lock, Map as MapIcon, Calendar as CalendarIcon, LayoutGrid, Download, Upload, Medal, Palette, ChevronRight } from 'lucide-react';
-import { playStampSound } from './utils/audio';
+import { Settings, RefreshCw, Sprout, FlaskConical, Check, CalendarRange, Stamp, Lock, Map as MapIcon, Calendar as CalendarIcon, LayoutGrid, Download, Upload, Medal, Palette, ChevronRight, Trophy, Volume2, VolumeX } from 'lucide-react';
+import { playStampSound, SOUND_OPTIONS } from './utils/audio';
 import { CalendarStyle } from './types';
 
 function App() {
@@ -24,6 +26,7 @@ function App() {
     switchHabit,
     updateStampStyle,
     setCalendarStyle,
+    setSoundEffect,
     stampToday, 
     debugStampDate,
     debugStampRange,
@@ -39,16 +42,21 @@ function App() {
     removePetFromArea,
     unlockArea,
     // Phase 4
-    retireHabit
+    retireHabit,
+    // Phase 6
+    newlyUnlockedAchievements,
+    dismissToast
   } = useHabitEngine();
 
   const [justStamped, setJustStamped] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showIconSelector, setShowIconSelector] = useState(false);
   const [showStyleSelector, setShowStyleSelector] = useState(false); // New state for style selector
+  const [showSoundSelector, setShowSoundSelector] = useState(false); // New state for sound selector
   const [showAddModal, setShowAddModal] = useState(false);
   const [showCompendium, setShowCompendium] = useState(false);
   const [showHallOfFame, setShowHallOfFame] = useState(false);
+  const [showAchievements, setShowAchievements] = useState(false);
   
   // File Input Ref
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -76,7 +84,7 @@ function App() {
   }
 
   const handleStamp = () => {
-    playStampSound();
+    playStampSound(gameState.selectedSound);
     stampToday();
     setJustStamped(true);
     setTimeout(() => setJustStamped(false), 2000);
@@ -167,6 +175,14 @@ function App() {
                       unlockArea={unlockArea}
                   />
               </div>
+
+              {/* Toast Notification Layer (World View) */}
+              {newlyUnlockedAchievements.length > 0 && (
+                  <AchievementToast 
+                      achievement={newlyUnlockedAchievements[0]} 
+                      onDismiss={() => dismissToast(newlyUnlockedAchievements[0].id)} 
+                  />
+              )}
           </div>
       );
   }
@@ -175,6 +191,14 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 p-4 lg:p-8 relative">
       
+      {/* Toast Notification Layer */}
+      {newlyUnlockedAchievements.length > 0 && (
+          <AchievementToast 
+              achievement={newlyUnlockedAchievements[0]} 
+              onDismiss={() => dismissToast(newlyUnlockedAchievements[0].id)} 
+          />
+      )}
+
       {/* Hidden File Input for Import */}
       <input 
         type="file" 
@@ -212,6 +236,14 @@ function App() {
           />
       )}
 
+      {/* Achievement Modal */}
+      {showAchievements && (
+          <AchievementList 
+            unlockedIds={gameState.unlockedAchievements}
+            onClose={() => setShowAchievements(false)}
+          />
+      )}
+
       {/* Navbar / Header */}
       <header className="max-w-7xl mx-auto mb-6">
         <div className="flex justify-between items-center px-2 mb-4">
@@ -223,6 +255,15 @@ function App() {
             </div>
 
             <div className="flex items-center gap-2 relative z-40">
+                {/* Achievement Button */}
+                <button 
+                    onClick={() => setShowAchievements(true)}
+                    className="p-3 bg-amber-50 hover:bg-amber-100 rounded-full text-amber-600 transition-all shadow-sm border border-amber-200"
+                    title="成就"
+                >
+                    <Trophy size={20} />
+                </button>
+
                 {/* World Map Toggle Button */}
                 <button 
                     onClick={() => setCurrentView('world')}
@@ -265,6 +306,36 @@ function App() {
 
                     <div className="px-4 py-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 mt-2">設定</div>
                     
+                    {/* Sound Settings */}
+                    <button 
+                        onClick={() => setShowSoundSelector(!showSoundSelector)}
+                        className="w-full flex items-center justify-between px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 rounded-xl transition-colors font-medium mb-1"
+                    >
+                        <div className="flex items-center gap-3">
+                            <Volume2 size={16} />
+                            打卡音效
+                        </div>
+                        <ChevronRight size={16} className={`transition-transform ${showSoundSelector ? 'rotate-90' : ''}`} />
+                    </button>
+
+                    {showSoundSelector && (
+                        <div className="bg-slate-50 p-2 m-2 rounded-xl border border-slate-100 space-y-1">
+                            {SOUND_OPTIONS.map(sound => (
+                                <button
+                                    key={sound.id}
+                                    onClick={() => {
+                                        setSoundEffect(sound.id);
+                                        playStampSound(sound.id);
+                                    }}
+                                    className={`w-full text-left px-3 py-2 rounded-lg text-sm font-bold flex justify-between items-center ${gameState.selectedSound === sound.id ? 'bg-white text-indigo-500 shadow-sm border border-indigo-100' : 'text-slate-500 hover:bg-slate-200'}`}
+                                >
+                                    {sound.label}
+                                    {gameState.selectedSound === sound.id && <Check size={14} />}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
                     {/* Calendar Style Selector */}
                     <button 
                         onClick={() => setShowStyleSelector(!showStyleSelector)}
@@ -500,6 +571,7 @@ function App() {
                   onStamp={handleStamp}
                   isTodayStamped={isTodayStamped()}
                   style={gameState.calendarStyle} // Pass the style
+                  selectedSound={gameState.selectedSound}
                 />
              ) : (
                 <OverallCalendarView 

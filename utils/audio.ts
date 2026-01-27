@@ -12,7 +12,15 @@ const getCtx = () => {
   return audioCtx;
 };
 
-export const playStampSound = () => {
+export const SOUND_OPTIONS = [
+  { id: 'thud', label: '沉穩' },
+  { id: 'pop', label: '氣泡' },
+  { id: 'ding', label: '清脆' },
+  { id: 'retro', label: '復古' },
+  { id: 'soft', label: '輕柔' },
+];
+
+export const playStampSound = (soundId: string = 'thud') => {
   try {
     const ctx = getCtx();
     if (!ctx) return;
@@ -20,28 +28,95 @@ export const playStampSound = () => {
 
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    
-    // Filter to make it sound more like paper/ink thud
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.value = 800;
+    const now = ctx.currentTime;
 
-    osc.connect(filter);
-    filter.connect(gain);
-    gain.connect(ctx.destination);
+    switch (soundId) {
+      case 'pop':
+        // Pop sound: Sine wave with quick frequency drop
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, now);
+        osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
+        
+        gain.gain.setValueAtTime(0.5, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.1);
+        break;
 
-    // Deep "thud" sound
-    osc.type = 'triangle'; // Triangle has a bit more body than sine
-    osc.frequency.setValueAtTime(180, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.15);
+      case 'ding':
+        // Ding sound: High sine wave with longer decay
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1200, now);
+        
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.3, now + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 1.0);
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 1.0);
+        break;
 
-    // Quick attack, quick decay
-    gain.gain.setValueAtTime(0, ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.8, ctx.currentTime + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+      case 'retro':
+        // Retro sound: Square wave arpeggio (Coin style)
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.setValueAtTime(880, now + 0.1);
+        
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.linearRampToValueAtTime(0.1, now + 0.1);
+        gain.gain.linearRampToValueAtTime(0, now + 0.3);
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.3);
+        break;
 
-    osc.start();
-    osc.stop(ctx.currentTime + 0.25);
+      case 'soft':
+        // Soft sound: Sine wave, lower frequency, gentle envelope
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(300, now);
+        osc.frequency.linearRampToValueAtTime(150, now + 0.2);
+
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.3, now + 0.05);
+        gain.gain.linearRampToValueAtTime(0, now + 0.2);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.2);
+        break;
+
+      case 'thud':
+      default:
+        // Default "Thud": Filtered triangle wave
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 800;
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.exponentialRampToValueAtTime(40, now + 0.15);
+
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.8, now + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+
+        osc.start(now);
+        osc.stop(now + 0.25);
+        break;
+    }
+
   } catch (e) {
     console.warn("Audio play failed", e);
   }

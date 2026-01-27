@@ -120,6 +120,10 @@ export interface GameState {
   
   // Phase 5: Customization
   calendarStyle: CalendarStyle;
+  selectedSound: string; // New: Audio preference
+
+  // Phase 6: Achievements
+  unlockedAchievements: string[]; // List of Achievement IDs
 }
 
 // Define the visual stages of the pet

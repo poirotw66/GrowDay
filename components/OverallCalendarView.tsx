@@ -31,7 +31,7 @@ const OverallCalendarView: React.FC<Props> = ({ habits, style = 'handdrawn' }) =
     let count = 0;
     const completedHabitNames: string[] = [];
     
-    Object.values(habits).forEach(habit => {
+    Object.values(habits).forEach((habit: Habit) => {
         if (habit.logs[dateStr]?.stamped) {
             count++;
             completedHabitNames.push(habit.name);
@@ -75,6 +75,19 @@ const OverallCalendarView: React.FC<Props> = ({ habits, style = 'handdrawn' }) =
 
   return (
     <div className="h-full flex flex-col relative">
+
+      {/* Dynamic Keyframes for Stamp Animation (Centered version) */}
+      <style>{`
+        @keyframes stamp-entry-centered {
+          0% { opacity: 0; transform: rotate(var(--rot-start)) scale(2.5); }
+          40% { opacity: 1; transform: rotate(var(--rot-end)) scale(0.9); }
+          70% { transform: rotate(var(--rot-end)) scale(1.15); }
+          100% { transform: rotate(var(--rot-end)) scale(1.3); opacity: 0.9; }
+        }
+        .animate-stamp-centered {
+          animation: stamp-entry-centered 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+      `}</style>
        
       {/* Handdrawn Seasonal Tape */}
       {style === 'handdrawn' && (
@@ -174,9 +187,11 @@ const OverallCalendarView: React.FC<Props> = ({ habits, style = 'handdrawn' }) =
                         {/* The Ink Stamp */}
                         {count > 0 && (
                             <div 
-                                className={`absolute z-10 ${stampColor} mix-blend-multiply opacity-90 animate-in zoom-in duration-300`}
+                                className={`absolute z-10 ${stampColor} mix-blend-multiply opacity-90 animate-stamp-centered`}
                                 style={{
-                                    transform: `rotate(${rotation}deg) scale(1.3)`
+                                    // Pass dynamic values to CSS variables for keyframes
+                                    ['--rot-start' as any]: `${rotation - 15}deg`,
+                                    ['--rot-end' as any]: `${rotation}deg`,
                                 }}
                             >
                                 <div className="relative flex items-center justify-center">

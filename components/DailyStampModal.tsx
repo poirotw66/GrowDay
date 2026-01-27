@@ -9,11 +9,12 @@ interface Props {
   habitName: string;
   stampIconId: string;
   stampColor: string;
+  selectedSound: string;
   onConfirm: (x: number, y: number, rotation: number) => void;
   onClose: () => void;
 }
 
-const DailyStampModal: React.FC<Props> = ({ habitName, stampIconId, stampColor, onConfirm, onClose }) => {
+const DailyStampModal: React.FC<Props> = ({ habitName, stampIconId, stampColor, selectedSound, onConfirm, onClose }) => {
   const [stampedPos, setStampedPos] = useState<{x: number, y: number, rotation: number} | null>(null);
   const paperRef = useRef<HTMLDivElement>(null);
   const StampIcon = getStampIcon(stampIconId);
@@ -35,8 +36,8 @@ const DailyStampModal: React.FC<Props> = ({ habitName, stampIconId, stampColor, 
       const yPercent = (y / rect.height) * 100;
       const rotation = Math.random() * 40 - 20; // -20 to 20 degrees
 
-      // Play Sound!
-      playStampSound();
+      // Play Sound with selected ID!
+      playStampSound(selectedSound);
 
       setStampedPos({ x: xPercent, y: yPercent, rotation });
 

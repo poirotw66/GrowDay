@@ -15,9 +15,10 @@ interface Props {
   onStamp: (x?: number, y?: number, rotation?: number) => void;
   isTodayStamped: boolean;
   style?: CalendarStyle;
+  selectedSound: string;
 }
 
-const CalendarView: React.FC<Props> = ({ habit, onStamp, isTodayStamped, style = 'handdrawn' }) => {
+const CalendarView: React.FC<Props> = ({ habit, onStamp, isTodayStamped, style = 'handdrawn' as CalendarStyle, selectedSound }) => {
   const [displayDate, setDisplayDate] = useState(new Date());
   const [showStampModal, setShowStampModal] = useState(false);
   
@@ -239,7 +240,7 @@ const CalendarView: React.FC<Props> = ({ habit, onStamp, isTodayStamped, style =
       }
   };
 
-  const theme = getTheme(style);
+  const theme = getTheme(style as CalendarStyle);
 
   // Hand-drawn border radius generator
   const getHandDrawnStyle = () => style === 'handdrawn' ? ({
@@ -249,11 +250,25 @@ const CalendarView: React.FC<Props> = ({ habit, onStamp, isTodayStamped, style =
   return (
     <div className="h-full flex flex-col relative">
       
+      {/* Dynamic Keyframes for Stamp Animation */}
+      <style>{`
+        @keyframes stamp-entry {
+          0% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--rot-start)) scale(2.5); }
+          40% { opacity: 1; transform: translate(-50%, -50%) rotate(var(--rot-end)) scale(0.9); }
+          70% { transform: translate(-50%, -50%) rotate(var(--rot-end)) scale(1.15); }
+          100% { transform: translate(-50%, -50%) rotate(var(--rot-end)) scale(var(--scale-end)); opacity: 0.9; }
+        }
+        .animate-stamp {
+          animation: stamp-entry 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+      `}</style>
+
       {showStampModal && (
           <DailyStampModal 
             habitName={habit.name}
             stampIconId={habit.stampIcon}
             stampColor={stampColor}
+            selectedSound={selectedSound}
             onClose={() => setShowStampModal(false)}
             onConfirm={handleStampConfirm}
           />
@@ -306,6 +321,7 @@ const CalendarView: React.FC<Props> = ({ habit, onStamp, isTodayStamped, style =
             const posX = log?.position?.x ?? 50;
             const posY = log?.position?.y ?? 50;
             const rotation = log?.position?.rotation ?? 0;
+            const finalScale = style === 'minimal' ? 1.2 : 1.4;
 
             // Minimalist theme accent color handling for TODAY
             const minimalTodayStyle = style === 'minimal' && isToday && !isStamped 
@@ -343,12 +359,15 @@ const CalendarView: React.FC<Props> = ({ habit, onStamp, isTodayStamped, style =
 
                     {isStamped && (
                         <div 
-                            className="absolute z-10 drop-shadow-sm animate-in zoom-in spin-in-3 duration-300 pointer-events-none mix-blend-multiply"
+                            className="absolute z-10 drop-shadow-sm animate-stamp pointer-events-none mix-blend-multiply"
                             style={{
                                 color: style === 'american' ? 'black' : dayColor, 
                                 left: `${posX}%`,
                                 top: `${posY}%`,
-                                transform: `translate(-50%, -50%) rotate(${rotation}deg) scale(${style === 'minimal' ? 1.2 : 1.4})`
+                                // Pass dynamic values to CSS variables for keyframes
+                                ['--rot-start' as any]: `${rotation - 15}deg`,
+                                ['--rot-end' as any]: `${rotation}deg`,
+                                ['--scale-end' as any]: finalScale,
                             }}
                         >
                             <DayStampIcon size={28} strokeWidth={style === 'american' ? 3 : 2.5} className="opacity-90" />

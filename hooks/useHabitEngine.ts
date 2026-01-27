@@ -7,6 +7,7 @@ import { assignRandomPet, getPetById } from '../utils/petData';
 import { getDefaultUnlockedIcons, DEFAULT_STAMP_COLOR } from '../utils/stampIcons';
 import { INITIAL_AREAS, DECORATION_ITEMS } from '../utils/worldData';
 import { playUnlockSound } from '../utils/audio';
+import { ACHIEVEMENTS, AchievementDef } from '../utils/achievementData';
 
 const STORAGE_KEY = 'growday_save_v2'; 
 const OLD_STORAGE_KEY = 'growday_save_v1';
@@ -24,7 +25,9 @@ const INITIAL_STATE: GameState = {
     areas: JSON.parse(JSON.stringify(INITIAL_AREAS)) // Deep copy to avoid reference issues
   },
   retiredPets: [],
-  calendarStyle: 'handdrawn' // Default to the warm style
+  calendarStyle: 'handdrawn', // Default to the warm style
+  selectedSound: 'thud', // Default sound
+  unlockedAchievements: []
 };
 
 // Helper to calculate monthly count
@@ -66,6 +69,9 @@ const checkUnlockableIcons = (habit: Habit, currentUnlocked: string[], monthlyCo
 export const useHabitEngine = () => {
   const [gameState, setGameState] = useState<GameState>(INITIAL_STATE);
   const [isLoaded, setIsLoaded] = useState(false);
+  
+  // Queue for displaying achievement toasts
+  const [newlyUnlockedAchievements, setNewlyUnlockedAchievements] = useState<AchievementDef[]>([]);
 
   // Load from local storage on mount
   useEffect(() => {
@@ -101,7 +107,7 @@ export const useHabitEngine = () => {
           loadedUnlockedIcons = checkUnlockableIcons(habit, loadedUnlockedIcons, monthlyCount);
         });
 
-        // Ensure new fields exist for existing users (Phase 3 & 4 & 5)
+        // Ensure new fields exist for existing users (Phase 3 & 4 & 5 & 6)
         const updatedState = {
            ...INITIAL_STATE, // Start with defaults
            ...parsed,        // Overwrite with saved data
@@ -109,7 +115,9 @@ export const useHabitEngine = () => {
            unlockedIcons: loadedUnlockedIcons,
            world: parsed.world ? { ...INITIAL_STATE.world, ...parsed.world } : INITIAL_STATE.world,
            retiredPets: parsed.retiredPets || [],
-           calendarStyle: parsed.calendarStyle || 'handdrawn'
+           calendarStyle: parsed.calendarStyle || 'handdrawn',
+           selectedSound: parsed.selectedSound || 'thud',
+           unlockedAchievements: parsed.unlockedAchievements || []
         };
 
         setGameState(updatedState);
@@ -173,6 +181,36 @@ export const useHabitEngine = () => {
     }
   }, [gameState, isLoaded]);
 
+  // --- Logic: Process Achievements ---
+  const processAchievements = (currentState: GameState): GameState => {
+      const newUnlockedIds: string[] = [];
+      const unlockedDefs: AchievementDef[] = [];
+      let bonusCoins = 0;
+
+      ACHIEVEMENTS.forEach(achievement => {
+          if (!currentState.unlockedAchievements.includes(achievement.id)) {
+              if (achievement.condition(currentState)) {
+                  newUnlockedIds.push(achievement.id);
+                  unlockedDefs.push(achievement);
+                  bonusCoins += achievement.rewardCoins;
+              }
+          }
+      });
+
+      if (newUnlockedIds.length > 0) {
+          playUnlockSound();
+          setNewlyUnlockedAchievements(prev => [...prev, ...unlockedDefs]);
+          
+          return {
+              ...currentState,
+              unlockedAchievements: [...currentState.unlockedAchievements, ...newUnlockedIds],
+              coins: currentState.coins + bonusCoins
+          };
+      }
+      
+      return currentState;
+  };
+
   // Create a new habit
   const addHabit = useCallback((name: string, icon: string, color: PetColor, stampColor: string = DEFAULT_STAMP_COLOR) => {
     const newId = 'habit_' + Date.now();
@@ -195,16 +233,19 @@ export const useHabitEngine = () => {
       generation: 1
     };
 
-    setGameState(prev => ({
-      ...prev,
-      habits: {
-        ...prev.habits,
-        [newId]: newHabit
-      },
-      activeHabitId: newId,
-      unlockedPets: Array.from(new Set([...prev.unlockedPets, assignedPet])),
-      isOnboarded: true
-    }));
+    setGameState(prev => {
+        const nextState = {
+          ...prev,
+          habits: {
+            ...prev.habits,
+            [newId]: newHabit
+          },
+          activeHabitId: newId,
+          unlockedPets: Array.from(new Set([...prev.unlockedPets, assignedPet])),
+          isOnboarded: true
+        };
+        return processAchievements(nextState);
+    });
   }, []);
 
   const switchHabit = useCallback((habitId: string) => {
@@ -238,6 +279,13 @@ export const useHabitEngine = () => {
       setGameState(prev => ({
           ...prev,
           calendarStyle: style
+      }));
+  }, []);
+
+  const setSoundEffect = useCallback((soundId: string) => {
+      setGameState(prev => ({
+          ...prev,
+          selectedSound: soundId
       }));
   }, []);
 
@@ -290,7 +338,7 @@ export const useHabitEngine = () => {
       const multiplier = 1 + (prev.retiredPets.length * 0.1); 
       const earnedCoins = Math.floor(baseCoin * multiplier);
 
-      return {
+      const nextState = {
         ...prev,
         habits: {
             ...prev.habits,
@@ -299,6 +347,8 @@ export const useHabitEngine = () => {
         unlockedIcons: updatedUnlockedIcons,
         coins: prev.coins + earnedCoins
       };
+
+      return processAchievements(nextState);
     });
   }, []);
 
@@ -337,7 +387,7 @@ export const useHabitEngine = () => {
 
           playUnlockSound();
 
-          return {
+          const nextState = {
               ...prev,
               habits: {
                   ...prev.habits,
@@ -349,6 +399,8 @@ export const useHabitEngine = () => {
                   ? prev.unlockedPets 
                   : [...prev.unlockedPets, newPetId]
           };
+
+          return processAchievements(nextState);
       });
   }, []);
 
@@ -359,11 +411,13 @@ export const useHabitEngine = () => {
       const item = DECORATION_ITEMS.find(i => i.id === itemId);
       if (!item || prev.coins < item.price) return prev;
 
-      return {
+      const nextState = {
         ...prev,
         coins: prev.coins - item.price,
         inventory: [...prev.inventory, itemId]
       };
+      
+      return processAchievements(nextState);
     });
   }, []);
 
@@ -471,7 +525,7 @@ export const useHabitEngine = () => {
        const area = INITIAL_AREAS[areaId];
        if (!area || prev.coins < area.unlockCost) return prev;
        
-       return {
+       const nextState = {
           ...prev,
           coins: prev.coins - area.unlockCost,
           world: {
@@ -479,6 +533,8 @@ export const useHabitEngine = () => {
              unlockedAreas: [...prev.world.unlockedAreas, areaId]
           }
        };
+
+       return processAchievements(nextState);
     });
   }, []);
 
@@ -523,7 +579,7 @@ export const useHabitEngine = () => {
       const monthlyCount = getHabitMonthlyCount(updatedHabit, d.getFullYear(), d.getMonth());
       const updatedUnlockedIcons = checkUnlockableIcons(updatedHabit, prev.unlockedIcons, monthlyCount);
 
-      return {
+      const nextState = {
         ...prev,
         habits: {
             ...prev.habits,
@@ -532,6 +588,8 @@ export const useHabitEngine = () => {
         unlockedIcons: updatedUnlockedIcons,
         coins: prev.coins + 20
       };
+
+      return processAchievements(nextState);
     });
   }, []);
 
@@ -580,7 +638,7 @@ export const useHabitEngine = () => {
 
       const updatedUnlockedIcons = checkUnlockableIcons(updatedHabit, prev.unlockedIcons, 0); 
 
-      return {
+      const nextState = {
         ...prev,
         habits: {
             ...prev.habits,
@@ -589,6 +647,8 @@ export const useHabitEngine = () => {
         unlockedIcons: updatedUnlockedIcons,
         coins: prev.coins + (addedExp * 2) // 20 coins per stamp
       };
+
+      return processAchievements(nextState);
     });
   }, []);
 
@@ -632,6 +692,10 @@ export const useHabitEngine = () => {
     }
   }, []);
 
+  const dismissToast = useCallback((id: string) => {
+      setNewlyUnlockedAchievements(prev => prev.filter(a => a.id !== id));
+  }, []);
+
   return {
     gameState,
     activeHabit: gameState.activeHabitId ? gameState.habits[gameState.activeHabitId] : null,
@@ -640,13 +704,14 @@ export const useHabitEngine = () => {
     switchHabit,
     updateStampStyle,
     setCalendarStyle,
+    setSoundEffect, // Exported setter
     stampToday,
     debugStampDate,
     debugStampRange,
     isTodayStamped,
     getMonthlyCount,
     resetProgress,
-    importSaveData, // Exposed for App.tsx
+    importSaveData, 
     // Phase 3
     buyDecoration,
     placeDecoration,
@@ -655,6 +720,9 @@ export const useHabitEngine = () => {
     removePetFromArea,
     unlockArea,
     // Phase 4
-    retireHabit
+    retireHabit,
+    // Phase 6
+    newlyUnlockedAchievements,
+    dismissToast
   };
 };
