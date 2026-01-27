@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { getStageConfig, STAGE_THRESHOLDS } from '../utils/gameLogic';
 import { Habit, PetStage } from '../types';
-import { PartyPopper, Info, X, Medal, Sparkles } from 'lucide-react';
+import { PartyPopper, Info, X, Medal, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import { getPetEmoji } from '../utils/petData';
 
 interface Props {
@@ -18,12 +18,16 @@ const PetDisplay: React.FC<Props> = ({ habit, justStamped, className = "", onRet
   const [showInfo, setShowInfo] = useState(false);
   const [showRetireConfirm, setShowRetireConfirm] = useState(false);
   
+  // Default to compact mode, expand only on interaction or new stamp
+  const [isExpanded, setIsExpanded] = useState(false);
+  
   const currentEmoji = getPetEmoji(habit.petId, config.stage);
   const isMaxLevel = habit.currentLevel >= STAGE_THRESHOLDS.ADULT;
 
-  // Trigger bounce animation when justStamped becomes true
+  // Auto-expand and bounce animation when justStamped becomes true
   useEffect(() => {
     if (justStamped) {
+      setIsExpanded(true); // Auto expand to show the celebration
       setBounce(true);
       const timer = setTimeout(() => setBounce(false), 1000);
       return () => clearTimeout(timer);
@@ -60,12 +64,63 @@ const PetDisplay: React.FC<Props> = ({ habit, justStamped, className = "", onRet
       { label: '完全體', range: `Lv.${STAGE_THRESHOLDS.ADULT}+`, emoji: getPetEmoji(habit.petId, PetStage.ADULT), reached: habit.currentLevel >= STAGE_THRESHOLDS.ADULT },
   ];
 
+  // --- COMPACT VIEW (DEFAULT) ---
+  if (!isExpanded) {
+      return (
+          <div 
+             onClick={() => setIsExpanded(true)}
+             className={`w-full ${config.colorBg} rounded-3xl p-4 shadow-sm flex items-center justify-between cursor-pointer hover:brightness-95 transition-all ${className}`}
+          >
+              <div className="flex items-center gap-4">
+                  {/* Mini Avatar */}
+                  <div className="w-16 h-16 bg-white/60 rounded-full flex items-center justify-center text-4xl shadow-sm border border-white/50">
+                      {currentEmoji}
+                  </div>
+                  
+                  {/* Info */}
+                  <div>
+                      <h2 className="text-lg font-bold text-slate-700 flex items-center gap-2">
+                          {habit.name}
+                          {habit.generation && habit.generation > 1 && (
+                             <span className="text-[10px] bg-white/60 px-2 py-0.5 rounded-full text-slate-500">Gen {habit.generation}</span>
+                          )}
+                      </h2>
+                      <div className="flex items-center gap-2 text-sm text-slate-600 font-medium">
+                          <span className="text-amber-600 font-bold">Lv.{habit.currentLevel}</span>
+                          <span className="opacity-40">|</span>
+                          <span>{config.label}</span>
+                      </div>
+                      {/* Mini Bar */}
+                      <div className="w-32 h-1.5 bg-white/40 rounded-full mt-1.5 overflow-hidden">
+                          <div className="h-full bg-amber-400 rounded-full" style={{ width: `${progressPercent}%` }}></div>
+                      </div>
+                  </div>
+              </div>
+
+              {/* Expand Hint */}
+              <div className="p-2 bg-white/40 rounded-full text-slate-500 hover:bg-white/60">
+                  <ChevronDown size={24} />
+              </div>
+          </div>
+      );
+  }
+
+  // --- EXPANDED VIEW ---
   return (
-    <div className={`relative w-full ${config.colorBg} rounded-[2.5rem] shadow-sm flex flex-col items-center justify-center transition-colors duration-700 overflow-hidden ${className}`}>
+    <div className={`relative w-full ${config.colorBg} rounded-[2.5rem] shadow-sm flex flex-col items-center justify-center transition-all duration-700 overflow-hidden min-h-[500px] animate-in slide-in-from-top-4 ${className}`}>
       
       {/* Decorative background circles */}
       <div className="absolute top-10 left-10 w-32 h-32 bg-white opacity-20 rounded-full blur-2xl animate-pulse"></div>
       <div className="absolute bottom-20 right-10 w-48 h-48 bg-white opacity-20 rounded-full blur-3xl"></div>
+
+      {/* Collapse Button (Top Left - Replaces Info, Info moved next to name) */}
+      <button 
+        onClick={(e) => { e.stopPropagation(); setIsExpanded(false); }}
+        className="absolute top-8 left-8 p-2 bg-white/50 hover:bg-white/80 rounded-full text-slate-600 transition-colors z-20"
+        title="收起"
+      >
+        <ChevronUp size={24} />
+      </button>
 
       {/* Generation Badge (if > 1) */}
       {habit.generation && habit.generation > 1 && (
@@ -73,15 +128,6 @@ const PetDisplay: React.FC<Props> = ({ habit, justStamped, className = "", onRet
               第 {habit.generation} 世代
           </div>
       )}
-
-      {/* Info Button (Top Left) */}
-      <button 
-        onClick={() => setShowInfo(true)}
-        className="absolute top-8 left-8 p-2 bg-white/50 hover:bg-white/80 rounded-full text-slate-600 transition-colors z-20"
-        title="成長指南"
-      >
-        <Info size={20} />
-      </button>
 
       {/* Level Badge (Top Right) */}
       <div className="absolute top-8 right-8 bg-white/90 backdrop-blur-sm px-5 py-2 rounded-full shadow-sm text-sm font-bold text-slate-600 flex items-center gap-2 z-20">
@@ -91,7 +137,10 @@ const PetDisplay: React.FC<Props> = ({ habit, justStamped, className = "", onRet
       </div>
 
       {/* The Pet Character */}
-      <div className={`relative z-10 transition-transform duration-500 p-8 ${bounce ? 'animate-bounce' : 'animate-float'}`}>
+      <div 
+        onClick={() => setBounce(true)}
+        className={`relative z-10 transition-transform duration-500 p-8 ${bounce ? 'animate-bounce' : 'animate-float'}`}
+      >
          {/* Confetti effect overlay when bouncing */}
          {bounce && (
             <div className="absolute -top-10 left-1/2 -translate-x-1/2 text-amber-500 animate-ping">
@@ -107,11 +156,21 @@ const PetDisplay: React.FC<Props> = ({ habit, justStamped, className = "", onRet
         <div className="w-32 h-6 bg-black opacity-10 rounded-[100%] mx-auto mt-0 blur-md"></div>
       </div>
 
-      {/* Status Text */}
+      {/* Status Text & Info Button */}
       <div className="mt-8 text-center z-10 px-8 max-w-lg">
-        <h2 className="text-3xl font-bold text-slate-700 opacity-90 mb-3 tracking-tight">
-            {habit.name}
-        </h2>
+        <div className="flex items-center justify-center gap-2 mb-3">
+            <h2 className="text-3xl font-bold text-slate-700 opacity-90 tracking-tight">
+                {habit.name}
+            </h2>
+            <button 
+                onClick={() => setShowInfo(true)}
+                className="p-1.5 bg-white/40 hover:bg-white/60 rounded-full text-slate-600 transition-colors"
+                title="成長指南"
+            >
+                <Info size={16} />
+            </button>
+        </div>
+        
         <p className="text-slate-600 text-lg font-medium opacity-80 leading-relaxed">
             {bounce ? "太棒了！你的世界正在成長！" : config.description}
         </p>

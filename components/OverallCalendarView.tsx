@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
-import { getCalendarDays, formatMonthYear, getTodayString } from '../utils/dateUtils';
+import { getCalendarDays, getTodayString } from '../utils/dateUtils';
 import { Habit, CalendarStyle } from '../types';
-import { ChevronLeft, ChevronRight, Circle, Hexagon, Sun, BookOpen } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Circle, Hexagon, Sun, BookOpen, Star } from 'lucide-react';
 
 interface Props {
   habits: Record<string, Habit>;
@@ -50,7 +50,13 @@ const OverallCalendarView: React.FC<Props> = ({ habits, style = 'handdrawn' }) =
     return (hash % 30) - 15;
   };
 
-  // Duplicate basic theme logic from CalendarView for consistency (Simplified)
+  // Helper for seasonal colors (Simplified version of CalendarView)
+  const getSeasonalColor = (m: number) => {
+      const colors = ['#3b82f6', '#ec4899', '#22c55e', '#a855f7', '#eab308', '#f97316', '#06b6d4', '#10b981', '#d97706', '#f59e0b', '#94a3b8', '#ef4444'];
+      return colors[m % 12];
+  };
+  const accentColor = getSeasonalColor(month);
+
   const getContainerClass = () => {
     switch(style) {
         case 'minimal': return 'bg-white rounded-3xl shadow-sm border border-slate-100';
@@ -69,12 +75,21 @@ const OverallCalendarView: React.FC<Props> = ({ habits, style = 'handdrawn' }) =
 
   return (
     <div className="h-full flex flex-col relative">
-       {/* Washi Tape Decoration (Blue/Teal theme for summary) - Only for handdrawn */}
+       
+      {/* Handdrawn Seasonal Tape */}
       {style === 'handdrawn' && (
         <>
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-teal-100/80 rotate-[1deg] z-20 backdrop-blur-[1px] shadow-sm" style={{ clipPath: 'polygon(2% 0, 100% 0, 98% 100%, 0% 100%)' }}></div>
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-indigo-100/50 rotate-[-2deg] z-10" style={{ clipPath: 'polygon(0 0, 98% 0, 100% 100%, 2% 100%)' }}></div>
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 rotate-[1deg] z-20 backdrop-blur-[1px] shadow-sm opacity-80" 
+                 style={{ backgroundColor: accentColor, clipPath: 'polygon(2% 0, 100% 0, 98% 100%, 0% 100%)' }}></div>
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-slate-100/50 rotate-[-2deg] z-10" style={{ clipPath: 'polygon(0 0, 98% 0, 100% 100%, 2% 100%)' }}></div>
         </>
+      )}
+
+      {/* American Pop Decor */}
+      {style === 'american' && (
+          <div className="absolute -top-5 right-5 z-20 rotate-12 text-black">
+              <Star size={40} fill={accentColor} />
+          </div>
       )}
 
       <div 
@@ -137,11 +152,12 @@ const OverallCalendarView: React.FC<Props> = ({ habits, style = 'handdrawn' }) =
                     <div 
                         className={`
                         relative w-full h-full flex items-center justify-center transition-all duration-300
-                        ${isToday ? 'bg-indigo-50/50' : ''}
+                        ${isToday ? (style === 'minimal' ? '' : 'bg-indigo-50/50') : ''}
                         ${style === 'american' ? 'border-2 border-black rounded-none' : ''}
                         `}
                         style={{
                              borderRadius: isToday && style === 'handdrawn' ? '40% 60% 60% 40% / 40% 40% 60% 60%' : (style === 'american' ? '0' : '12px'),
+                             ...(style === 'minimal' && isToday ? { boxShadow: `0 0 0 2px white, 0 0 0 4px ${accentColor}` } : {})
                         }}
                         title={names.join(', ')}
                     >

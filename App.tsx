@@ -458,11 +458,11 @@ function App() {
       <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 lg:h-[calc(100vh-10rem)]">
         
         {/* Left Column: Pet World (Taking up 7 columns on desktop) */}
-        <section className="lg:col-span-7 flex flex-col h-[500px] lg:h-auto">
+        <section className="lg:col-span-7 flex flex-col min-h-min transition-all duration-500">
           <PetDisplay 
             habit={activeHabit} 
             justStamped={justStamped} 
-            className="h-full w-full shadow-lg border border-slate-100"
+            className="w-full shadow-lg border border-slate-100"
             onRetire={retireHabit}
           />
         </section>
