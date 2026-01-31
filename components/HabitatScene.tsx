@@ -1,9 +1,9 @@
 
-import React, { useEffect, useRef } from 'react';
-import { AreaConfig, PlacedItem, PlacedPet, PetStage } from '../types';
+import React, { useEffect, useRef, useState } from 'react';
+import { AreaConfig, PlacedPet } from '../types';
 import { getDecorationById } from '../utils/worldData';
 import { getPetEmoji } from '../utils/petData';
-import { X, Plus } from 'lucide-react';
+import { X } from 'lucide-react';
 
 interface Props {
   area: AreaConfig;
@@ -51,11 +51,6 @@ const SpaceParticles = () => {
       const rect = canvas.getBoundingClientRect();
       mouse.x = e.clientX - rect.left;
       mouse.y = e.clientY - rect.top;
-    };
-
-    const handleMouseLeave = () => {
-        mouse.x = -1000;
-        mouse.y = -1000;
     };
 
     window.addEventListener('resize', handleResize);
@@ -133,9 +128,13 @@ const SpaceParticles = () => {
 const WanderingPet: React.FC<{ pet: PlacedPet }> = ({ pet }) => {
   const emoji = getPetEmoji(pet.petId, pet.stage);
   
-  // Randomize animation duration to make them look independent
-  const duration = 10 + Math.random() * 10; 
-  const delay = Math.random() * 5;
+  // Use useState initializer to generate random values only on mount
+  // This is the correct pattern for one-time random initialization
+  const [animationValues] = useState(() => ({
+    duration: 10 + Math.random() * 10,
+    delay: Math.random() * 5
+  }));
+  const { duration, delay } = animationValues;
 
   return (
     <div 

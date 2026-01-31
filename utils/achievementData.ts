@@ -1,13 +1,14 @@
 
 import { GameState } from '../types';
-import { Trophy, Flame, Coins, Map, Users, Sparkles, Star, Crown, Zap, Home } from 'lucide-react';
+import { Trophy, Flame, Coins, Map, Users, Star, Crown, Zap, Home } from 'lucide-react';
+import { LucideIcon } from 'lucide-react';
 
 export interface AchievementDef {
   id: string;
   title: string;
   description: string;
   rewardCoins: number;
-  icon: any;
+  icon: LucideIcon;
   condition: (state: GameState) => boolean;
 }
 

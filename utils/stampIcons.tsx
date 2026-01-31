@@ -1,5 +1,4 @@
 
-import React from 'react';
 import { 
   Star, 
   Sprout, 
@@ -19,11 +18,12 @@ import {
   Anchor,
   Feather,
   Gamepad2,
-  Diamond
+  Diamond,
+  LucideIcon
 } from 'lucide-react';
 
 // Define the available icons
-export const STAMP_ICONS: Record<string, React.FC<any>> = {
+export const STAMP_ICONS: Record<string, LucideIcon> = {
   'star': Star,
   'sprout': Sprout,
   'heart': Heart,
@@ -48,7 +48,7 @@ export const STAMP_ICONS: Record<string, React.FC<any>> = {
 export interface StampOption {
   id: string;
   label: string;
-  icon: any;
+  icon: LucideIcon;
   unlockHint?: string; // If present, the icon is locked by default
 }
 

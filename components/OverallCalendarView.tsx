@@ -190,8 +190,8 @@ const OverallCalendarView: React.FC<Props> = ({ habits, style = 'handdrawn' }) =
                                 className={`absolute z-10 ${stampColor} mix-blend-multiply opacity-90 animate-stamp-centered`}
                                 style={{
                                     // Pass dynamic values to CSS variables for keyframes
-                                    ['--rot-start' as any]: `${rotation - 15}deg`,
-                                    ['--rot-end' as any]: `${rotation}deg`,
+                                    ['--rot-start' as keyof React.CSSProperties]: `${rotation - 15}deg`,
+                                    ['--rot-end' as keyof React.CSSProperties]: `${rotation}deg`,
                                 }}
                             >
                                 <div className="relative flex items-center justify-center">

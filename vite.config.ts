@@ -8,6 +8,10 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 3000,
         host: '0.0.0.0',
+        // Fix HMR WebSocket connection
+        hmr: {
+          port: 3000,
+        },
       },
       plugins: [react()],
       define: {
@@ -18,6 +22,18 @@ export default defineConfig(({ mode }) => {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
-      }
+      },
+      // Copy public folder contents to dist
+      publicDir: 'public',
+      build: {
+        // Generate sourcemaps for debugging
+        sourcemap: true,
+      },
+      // Fix CSP eval issue in development
+      esbuild: {
+        supported: {
+          'top-level-await': true
+        },
+      },
     };
 });

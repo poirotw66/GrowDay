@@ -1,10 +1,10 @@
 
 import React, { useState, useMemo } from 'react';
-import { GameState, AreaConfig, DecorationItem, DecorationType } from '../types';
+import { GameState, AreaConfig, DecorationType, PetStage } from '../types';
 import HabitatScene from './HabitatScene';
-import { INITIAL_AREAS, DECORATION_ITEMS } from '../utils/worldData';
-import { Lock, Coins, Store, Map as MapIcon, ChevronLeft, Move, Users, Armchair, Sprout, LayoutGrid, Package } from 'lucide-react';
-import { PET_DEFINITIONS, getPetEmoji, getPetById } from '../utils/petData';
+import { DECORATION_ITEMS } from '../utils/worldData';
+import { Lock, Coins, Store, Map as MapIcon, ChevronLeft, Move, Users, Armchair, Sprout, LayoutGrid, Package, LucideIcon } from 'lucide-react';
+import { getPetEmoji, getPetById } from '../utils/petData';
 
 interface Props {
   gameState: GameState;
@@ -12,7 +12,7 @@ interface Props {
   buyDecoration: (id: string) => void;
   placeDecoration: (areaId: string, itemId: string) => void;
   removeDecoration: (areaId: string, instanceId: string) => void;
-  placePetInArea: (areaId: string, petId: string, stage: any) => void;
+  placePetInArea: (areaId: string, petId: string, stage: PetStage) => void;
   removePetFromArea: (areaId: string, instanceId: string) => void;
   unlockArea: (id: string) => void;
 }
@@ -57,7 +57,7 @@ const WorldView: React.FC<Props> = ({
   // ------------------------------------------------------------
   const areas: AreaConfig[] = Object.values(gameState.world.areas);
 
-  const categories: { id: 'all' | DecorationType; label: string; icon: any }[] = [
+  const categories: { id: 'all' | DecorationType; label: string; icon: LucideIcon }[] = [
       { id: 'all', label: '全部', icon: LayoutGrid },
       { id: 'furniture', label: '家具', icon: Armchair },
       { id: 'plant', label: '植物', icon: Sprout },

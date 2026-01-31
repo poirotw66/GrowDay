@@ -53,6 +53,7 @@ export const calculateLevel = (exp: number): number => {
 // Calculate streak based on logs
 export const calculateStreak = (logs: Record<string, DayLog>, todayStr: string): number => {
   let streak = 0;
+  // eslint-disable-next-line prefer-const
   let checkDate = new Date(todayStr);
 
   // Check if today is stamped

@@ -4,10 +4,16 @@
 
 let audioCtx: AudioContext | null = null;
 
+interface WindowWithWebkit extends Window {
+  webkitAudioContext?: typeof AudioContext;
+}
+
 const getCtx = () => {
   if (!audioCtx) {
-    const AudioContextClass = (window.AudioContext || (window as any).webkitAudioContext);
-    audioCtx = new AudioContextClass();
+    const AudioContextClass = (window.AudioContext || (window as WindowWithWebkit).webkitAudioContext);
+    if (AudioContextClass) {
+      audioCtx = new AudioContextClass();
+    }
   }
   return audioCtx;
 };

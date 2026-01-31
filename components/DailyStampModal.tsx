@@ -1,8 +1,7 @@
 
 import React, { useState, useRef } from 'react';
-import { getTodayString } from '../utils/dateUtils';
-import { getStampIcon, DEFAULT_STAMP_COLOR } from '../utils/stampIcons';
-import { X } from 'lucide-react';
+import { STAMP_ICONS, DEFAULT_STAMP_COLOR } from '../utils/stampIcons';
+import { X, Star } from 'lucide-react';
 import { playStampSound } from '../utils/audio';
 
 interface Props {
@@ -17,7 +16,8 @@ interface Props {
 const DailyStampModal: React.FC<Props> = ({ habitName, stampIconId, stampColor, selectedSound, onConfirm, onClose }) => {
   const [stampedPos, setStampedPos] = useState<{x: number, y: number, rotation: number} | null>(null);
   const paperRef = useRef<HTMLDivElement>(null);
-  const StampIcon = getStampIcon(stampIconId);
+  // Get the icon component directly from the record
+  const StampIcon = STAMP_ICONS[stampIconId] || Star;
   const today = new Date();
   const dateStr = `${today.getMonth() + 1}月${today.getDate()}日`;
   const yearStr = today.getFullYear();

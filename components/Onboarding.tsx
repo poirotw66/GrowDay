@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Sparkles, ArrowRight, ArrowLeft, Check } from 'lucide-react';
 import { STAMP_OPTIONS, STAMP_COLORS, DEFAULT_STAMP_COLOR } from '../utils/stampIcons';
 import { PetColor } from '../types';
-import { getColorName, getColorBg } from '../utils/petData';
+import { getColorName } from '../utils/petData';
 
 interface Props {
   onComplete: (name: string, icon: string, color: PetColor, stampColor: string) => void;

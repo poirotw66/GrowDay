@@ -1,7 +1,6 @@
 import React from 'react';
 import { GameState, Habit } from '../types';
 import { Plus, Book } from 'lucide-react';
-import { getColorBg } from '../utils/petData';
 
 interface Props {
   gameState: GameState;
@@ -18,7 +17,6 @@ const HabitSwitcher: React.FC<Props> = ({ gameState, onSwitch, onAdd, onOpenComp
        {/* Habit Chips */}
        {habits.map(habit => {
           const isActive = habit.id === gameState.activeHabitId;
-          const bgClass = getColorBg(habit.petColor);
           
           return (
              <button

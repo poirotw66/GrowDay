@@ -1,0 +1,26 @@
+{
+  "name": "GrowDay - 習慣養成",
+  "short_name": "GrowDay",
+  "description": "用可愛的電子寵物陪你養成好習慣！每日打卡，看著你的小夥伴一起成長。",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#f97316",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["lifestyle", "productivity"],
+  "lang": "zh-TW"
+}

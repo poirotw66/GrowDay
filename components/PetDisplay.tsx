@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { getStageConfig, STAGE_THRESHOLDS } from '../utils/gameLogic';
 import { Habit, PetStage } from '../types';
 import { PartyPopper, Info, X, Medal, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
@@ -14,25 +14,18 @@ interface Props {
 
 const PetDisplay: React.FC<Props> = ({ habit, justStamped, className = "", onRetire }) => {
   const config = getStageConfig(habit.currentLevel, habit.petColor);
-  const [bounce, setBounce] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
   const [showRetireConfirm, setShowRetireConfirm] = useState(false);
   
   // Default to compact mode, expand only on interaction or new stamp
-  const [isExpanded, setIsExpanded] = useState(false);
+  // Auto-expand when justStamped is true - derived state pattern
+  const [manualExpand, setManualExpand] = useState(false);
+  const isExpanded = justStamped || manualExpand;
   
+  // Bounce when justStamped is true - directly use prop as animation trigger
+  const shouldBounce = justStamped;
   const currentEmoji = getPetEmoji(habit.petId, config.stage);
   const isMaxLevel = habit.currentLevel >= STAGE_THRESHOLDS.ADULT;
-
-  // Auto-expand and bounce animation when justStamped becomes true
-  useEffect(() => {
-    if (justStamped) {
-      setIsExpanded(true); // Auto expand to show the celebration
-      setBounce(true);
-      const timer = setTimeout(() => setBounce(false), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [justStamped]);
 
   // Next level progress calculation (Bar)
   const expForCurrentLevel = (habit.currentLevel - 1) * 10;
@@ -68,7 +61,7 @@ const PetDisplay: React.FC<Props> = ({ habit, justStamped, className = "", onRet
   if (!isExpanded) {
       return (
           <div 
-             onClick={() => setIsExpanded(true)}
+             onClick={() => setManualExpand(true)}
              className={`w-full ${config.colorBg} rounded-3xl p-4 shadow-sm flex items-center justify-between cursor-pointer hover:brightness-95 transition-all ${className}`}
           >
               <div className="flex items-center gap-4">
@@ -115,7 +108,7 @@ const PetDisplay: React.FC<Props> = ({ habit, justStamped, className = "", onRet
 
       {/* Collapse Button (Top Left - Replaces Info, Info moved next to name) */}
       <button 
-        onClick={(e) => { e.stopPropagation(); setIsExpanded(false); }}
+        onClick={(e) => { e.stopPropagation(); setManualExpand(false); }}
         className="absolute top-8 left-8 p-2 bg-white/50 hover:bg-white/80 rounded-full text-slate-600 transition-colors z-20"
         title="收起"
       >
@@ -138,11 +131,10 @@ const PetDisplay: React.FC<Props> = ({ habit, justStamped, className = "", onRet
 
       {/* The Pet Character */}
       <div 
-        onClick={() => setBounce(true)}
-        className={`relative z-10 transition-transform duration-500 p-8 ${bounce ? 'animate-bounce' : 'animate-float'}`}
+        className={`relative z-10 transition-transform duration-500 p-8 ${shouldBounce ? 'animate-bounce' : 'animate-float'}`}
       >
          {/* Confetti effect overlay when bouncing */}
-         {bounce && (
+         {shouldBounce && (
             <div className="absolute -top-10 left-1/2 -translate-x-1/2 text-amber-500 animate-ping">
                <PartyPopper size={64} />
             </div>
@@ -172,7 +164,7 @@ const PetDisplay: React.FC<Props> = ({ habit, justStamped, className = "", onRet
         </div>
         
         <p className="text-slate-600 text-lg font-medium opacity-80 leading-relaxed">
-            {bounce ? "太棒了！你的世界正在成長！" : config.description}
+            {shouldBounce ? "太棒了！你的世界正在成長！" : config.description}
         </p>
       </div>
 
@@ -278,9 +270,17 @@ const PetDisplay: React.FC<Props> = ({ habit, justStamped, className = "", onRet
                                     <h4 className={`font-bold text-lg ${stage.reached ? 'text-slate-800' : 'text-slate-500'}`}>
                                         {stage.label}
                                     </h4>
-                                    {stage.reached && habit.currentLevel < (timelineStages[index + 1]?.range.match(/\d+/)?.[0] ? parseInt(timelineStages[index + 1].range.match(/\d+/)?.[0]!) : 999) && habit.currentLevel >= parseInt(stage.range.match(/\d+/)?.[0]!) && (
-                                         <span className="px-2 py-0.5 bg-orange-100 text-orange-600 text-xs font-bold rounded-full">CURRENT</span>
-                                    )}
+                                    {(() => {
+                                        const nextStageMatch = timelineStages[index + 1]?.range.match(/\d+/);
+                                        const currentStageMatch = stage.range.match(/\d+/);
+                                        const nextThreshold = nextStageMatch ? parseInt(nextStageMatch[0], 10) : 999;
+                                        const currentThreshold = currentStageMatch ? parseInt(currentStageMatch[0], 10) : 0;
+                                        
+                                        if (stage.reached && habit.currentLevel < nextThreshold && habit.currentLevel >= currentThreshold) {
+                                            return <span className="px-2 py-0.5 bg-orange-100 text-orange-600 text-xs font-bold rounded-full">CURRENT</span>;
+                                        }
+                                        return null;
+                                    })()}
                                 </div>
                                 <p className="text-sm text-slate-500 font-medium">{stage.range}</p>
                             </div>

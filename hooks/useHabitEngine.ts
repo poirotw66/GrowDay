@@ -1,9 +1,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { GameState, DayLog, Habit, PetColor, WorldState, PlacedItem, PlacedPet, PetStage, RetiredPet, CalendarStyle } from '../types';
+import { GameState, DayLog, Habit, PetColor, PlacedItem, PlacedPet, PetStage, RetiredPet, CalendarStyle } from '../types';
 import { calculateLevel, calculateStreak, STAGE_THRESHOLDS } from '../utils/gameLogic';
 import { getTodayString } from '../utils/dateUtils';
-import { assignRandomPet, getPetById } from '../utils/petData';
+import { assignRandomPet } from '../utils/petData';
 import { getDefaultUnlockedIcons, DEFAULT_STAMP_COLOR } from '../utils/stampIcons';
 import { INITIAL_AREAS, DECORATION_ITEMS } from '../utils/worldData';
 import { playUnlockSound } from '../utils/audio';
@@ -120,6 +120,7 @@ export const useHabitEngine = () => {
            unlockedAchievements: parsed.unlockedAchievements || []
         };
 
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- Necessary for initial load from localStorage
         setGameState(updatedState);
         setIsLoaded(true);
         return;
@@ -133,6 +134,8 @@ export const useHabitEngine = () => {
     if (savedV1) {
       try {
         const parsedV1 = JSON.parse(savedV1);
+        // V1 to V2 migration - logged for debugging purposes
+        // eslint-disable-next-line no-console
         console.log("Migrating from V1 to V2...");
         
         const newId = 'habit_' + Date.now();

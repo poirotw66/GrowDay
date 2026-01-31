@@ -2,7 +2,7 @@
 import React from 'react';
 import { PET_DEFINITIONS, getColorBg, getColorName } from '../utils/petData';
 import { Lock } from 'lucide-react';
-import { PetDefinition } from '../types';
+import { PetDefinition, PetColor } from '../types';
 
 interface Props {
   unlockedPetIds: string[];
@@ -33,11 +33,11 @@ const Compendium: React.FC<Props> = ({ unlockedPetIds, onClose }) => {
           </div>
 
           <div className="flex-1 overflow-y-auto p-6 space-y-8">
-             {Object.entries(groupedPets).map(([color, pets]) => (
+             {(Object.entries(groupedPets) as [PetColor, PetDefinition[]][]).map(([color, pets]) => (
                 <div key={color}>
                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                      <span className={`w-3 h-8 rounded-full ${getColorBg(color as any)}`}></span>
-                      {getColorName(color as any)}區域
+                      <span className={`w-3 h-8 rounded-full ${getColorBg(color)}`}></span>
+                      {getColorName(color)}區域
                    </h3>
                    
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

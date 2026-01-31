@@ -2,11 +2,11 @@
 import React, { useState } from 'react';
 import { getCalendarDays, getTodayString } from '../utils/dateUtils';
 import { Habit, CalendarStyle } from '../types';
-import { getStampIcon, DEFAULT_STAMP_COLOR } from '../utils/stampIcons';
+import { STAMP_ICONS, DEFAULT_STAMP_COLOR } from '../utils/stampIcons';
 import { 
     ChevronLeft, ChevronRight, CheckCircle2, 
-    Sparkles, Cherry, Flower2, Scroll, Star,
-    Snowflake, Heart, CloudRain, Sun, Cloud, Leaf, Ghost, Gift, Moon, Umbrella, Clover, Flag, Palette
+    Sparkles, Cherry, Flower2, Star,
+    Snowflake, Heart, CloudRain, Sun, Cloud, Leaf, Ghost, Gift, Moon, Umbrella, Clover
 } from 'lucide-react';
 import DailyStampModal from './DailyStampModal';
 
@@ -28,7 +28,8 @@ const CalendarView: React.FC<Props> = ({ habit, onStamp, isTodayStamped, style =
   const todayStr = getTodayString();
   const stampColor = habit.stampColor || DEFAULT_STAMP_COLOR;
 
-  const CurrentActionIcon = getStampIcon(habit.stampIcon);
+  // Get the icon component directly from the record - avoid useMemo to prevent static-components error
+  const StampIcon = STAMP_ICONS[habit.stampIcon] || Star;
 
   const handlePrevMonth = () => {
     setDisplayDate(new Date(year, month - 1, 1));
@@ -135,7 +136,7 @@ const CalendarView: React.FC<Props> = ({ habit, onStamp, isTodayStamped, style =
                // Jan: Pine/Crane, Feb: Plum, Mar: Cherry, Apr: Wisteria...
                // Simplified to seasons for code brevity
                let jpIcon = <Cherry size={32} />;
-               let jpBgPattern = "url('https://www.transparenttextures.com/patterns/rice-paper.png')";
+               const jpBgPattern = "url('https://www.transparenttextures.com/patterns/rice-paper.png')";
                let jpAccent = "text-pink-400";
                
                if (month === 0) { jpIcon = <Sun size={32} />; jpAccent = "text-red-500"; } // New Year
@@ -170,7 +171,7 @@ const CalendarView: React.FC<Props> = ({ habit, onStamp, isTodayStamped, style =
               // Feb: Pink/Red, Jul: Blue/Red, Oct: Orange/Black, Dec: Red/Green
               let amBorder = 'border-black';
               let amHeaderBg = 'bg-yellow-300';
-              let amBg = 'bg-white';
+              const amBg = 'bg-white';
               
               if (month === 1) { // Feb
                   amHeaderBg = 'bg-pink-300';
@@ -316,7 +317,7 @@ const CalendarView: React.FC<Props> = ({ habit, onStamp, isTodayStamped, style =
             
             const dayIconId = log?.icon || habit.stampIcon;
             const dayColor = log?.color || stampColor;
-            const DayStampIcon = getStampIcon(dayIconId);
+            const DayStampIcon = STAMP_ICONS[dayIconId] || Star;
             
             const posX = log?.position?.x ?? 50;
             const posY = log?.position?.y ?? 50;
@@ -365,9 +366,9 @@ const CalendarView: React.FC<Props> = ({ habit, onStamp, isTodayStamped, style =
                                 left: `${posX}%`,
                                 top: `${posY}%`,
                                 // Pass dynamic values to CSS variables for keyframes
-                                ['--rot-start' as any]: `${rotation - 15}deg`,
-                                ['--rot-end' as any]: `${rotation}deg`,
-                                ['--scale-end' as any]: finalScale,
+                                ['--rot-start' as keyof React.CSSProperties]: `${rotation - 15}deg`,
+                                ['--rot-end' as keyof React.CSSProperties]: `${rotation}deg`,
+                                ['--scale-end' as keyof React.CSSProperties]: finalScale,
                             }}
                         >
                             <DayStampIcon size={28} strokeWidth={style === 'american' ? 3 : 2.5} className="opacity-90" />
@@ -411,7 +412,7 @@ const CalendarView: React.FC<Props> = ({ habit, onStamp, isTodayStamped, style =
                 ) : (
                     <>
                         <div className="relative">
-                            <CurrentActionIcon size={22} className="animate-bounce" />
+                            <StampIcon size={22} className="animate-bounce" />
                         </div>
                         <span className="tracking-wide">蓋下印章</span>
                     </>
