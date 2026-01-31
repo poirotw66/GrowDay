@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { GameState, Habit } from '../types';
 import { Plus, Book } from 'lucide-react';
 
@@ -9,7 +9,7 @@ interface Props {
   onOpenCompendium: () => void;
 }
 
-const HabitSwitcher: React.FC<Props> = ({ gameState, onSwitch, onAdd, onOpenCompendium }) => {
+const HabitSwitcher: React.FC<Props> = memo(function HabitSwitcher({ gameState, onSwitch, onAdd, onOpenCompendium }) {
   const habits: Habit[] = Object.values(gameState.habits);
 
   return (
@@ -56,6 +56,6 @@ const HabitSwitcher: React.FC<Props> = ({ gameState, onSwitch, onAdd, onOpenComp
        </button>
     </div>
   );
-};
+});
 
 export default HabitSwitcher;

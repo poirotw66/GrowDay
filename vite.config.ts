@@ -8,9 +8,10 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 3000,
         host: '0.0.0.0',
-        // Fix HMR WebSocket connection
+        strictPort: false, // Allow fallback to next available port
+        // Fix HMR WebSocket connection - auto-detect port
         hmr: {
-          port: 3000,
+          clientPort: undefined, // Let Vite auto-detect
         },
       },
       plugins: [react()],

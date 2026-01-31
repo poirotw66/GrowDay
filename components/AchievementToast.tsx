@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, memo } from 'react';
 import { AchievementDef } from '../utils/achievementData';
 import { Coins, X } from 'lucide-react';
 
@@ -8,7 +8,7 @@ interface Props {
   onDismiss: () => void;
 }
 
-const AchievementToast: React.FC<Props> = ({ achievement, onDismiss }) => {
+const AchievementToast: React.FC<Props> = memo(function AchievementToast({ achievement, onDismiss }) {
   const Icon = achievement.icon;
 
   useEffect(() => {
@@ -45,6 +45,6 @@ const AchievementToast: React.FC<Props> = ({ achievement, onDismiss }) => {
         </div>
     </div>
   );
-};
+});
 
 export default AchievementToast;

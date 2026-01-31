@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import { Flame, Calendar, Trophy } from 'lucide-react';
 import { Habit } from '../types';
 
@@ -8,7 +8,7 @@ interface Props {
   monthlyCount: number;
 }
 
-const StatsBar: React.FC<Props> = ({ habit, monthlyCount }) => {
+const StatsBar: React.FC<Props> = memo(function StatsBar({ habit, monthlyCount }) {
   return (
     <div className="px-8 py-6 flex justify-between items-center bg-white rounded-[2rem] shadow-sm border border-slate-100 w-full">
       
@@ -44,6 +44,6 @@ const StatsBar: React.FC<Props> = ({ habit, monthlyCount }) => {
       </div>
     </div>
   );
-};
+});
 
 export default StatsBar;

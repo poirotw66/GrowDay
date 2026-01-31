@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback, memo } from 'react';
 import { getCalendarDays, getTodayString } from '../utils/dateUtils';
 import { Habit, CalendarStyle } from '../types';
 import { STAMP_ICONS, DEFAULT_STAMP_COLOR } from '../utils/stampIcons';
@@ -18,33 +18,35 @@ interface Props {
   selectedSound: string;
 }
 
-const CalendarView: React.FC<Props> = ({ habit, onStamp, isTodayStamped, style = 'handdrawn' as CalendarStyle, selectedSound }) => {
+const CalendarView: React.FC<Props> = memo(function CalendarView({ habit, onStamp, isTodayStamped, style = 'handdrawn' as CalendarStyle, selectedSound }) {
   const [displayDate, setDisplayDate] = useState(new Date());
   const [showStampModal, setShowStampModal] = useState(false);
   
   const year = displayDate.getFullYear();
   const month = displayDate.getMonth(); // 0-11
-  const days = getCalendarDays(year, month);
-  const todayStr = getTodayString();
+  
+  // Memoize expensive calendar calculation
+  const days = useMemo(() => getCalendarDays(year, month), [year, month]);
+  const todayStr = useMemo(() => getTodayString(), []);
   const stampColor = habit.stampColor || DEFAULT_STAMP_COLOR;
 
   // Get the icon component directly from the record - avoid useMemo to prevent static-components error
   const StampIcon = STAMP_ICONS[habit.stampIcon] || Star;
 
-  const handlePrevMonth = () => {
+  const handlePrevMonth = useCallback(() => {
     setDisplayDate(new Date(year, month - 1, 1));
-  };
+  }, [year, month]);
 
-  const handleNextMonth = () => {
+  const handleNextMonth = useCallback(() => {
     setDisplayDate(new Date(year, month + 1, 1));
-  };
+  }, [year, month]);
 
-  const handleStampConfirm = (x: number, y: number, rotation: number) => {
+  const handleStampConfirm = useCallback((x: number, y: number, rotation: number) => {
       onStamp(x, y, rotation);
       setShowStampModal(false);
-  };
+  }, [onStamp]);
 
-  const weekDays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  const weekDays = useMemo(() => ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'], []);
 
   // --- MONTHLY THEME CONFIGURATION ---
 
@@ -422,6 +424,6 @@ const CalendarView: React.FC<Props> = ({ habit, onStamp, isTodayStamped, style =
       </div>
     </div>
   );
-};
+});
 
 export default CalendarView;

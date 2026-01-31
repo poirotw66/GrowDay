@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { useHabitEngine } from './hooks/useHabitEngine';
 import PetDisplay from './components/PetDisplay';
 import CalendarView from './components/CalendarView';
@@ -67,26 +67,16 @@ function App() {
   const [debugStartDate, setDebugStartDate] = useState('');
   const [debugEndDate, setDebugEndDate] = useState('');
 
-  if (!isLoaded) return <div className="h-screen w-full bg-slate-50 flex items-center justify-center text-slate-400 font-medium">載入中...</div>;
-
-  // Initial Onboarding (if no habits exist)
-  if (!gameState.isOnboarded) {
-    return <Onboarding onComplete={(name, icon, color, stampColor) => addHabit(name, icon, color, stampColor)} />;
-  }
-
-  // Safety check
-  if (!activeHabit) {
-      return <div>Loading habit...</div>;
-  }
-
-  const handleStamp = () => {
-    playStampSound(gameState.selectedSound);
+  // All useCallback hooks MUST be defined before any early returns
+  const handleStamp = useCallback(() => {
+    playStampSound(gameState?.selectedSound || 'pop');
     stampToday();
     setJustStamped(true);
     setTimeout(() => setJustStamped(false), 2000);
-  };
+  }, [gameState?.selectedSound, stampToday]);
 
-  const handleExportData = () => {
+  const handleExportData = useCallback(() => {
+    if (!gameState) return;
     const dataStr = JSON.stringify(gameState);
     const blob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -95,15 +85,15 @@ function App() {
     a.download = `growday_backup_${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
-  };
+  }, [gameState]);
 
-  const handleImportClick = () => {
+  const handleImportClick = useCallback(() => {
       if (confirm('匯入備份將會覆蓋目前的進度，確定要繼續嗎？')) {
           fileInputRef.current?.click();
       }
-  };
+  }, []);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
 
@@ -117,11 +107,10 @@ function App() {
           }
       };
       reader.readAsText(file);
-      // Reset input so same file can be selected again if needed
       e.target.value = '';
-  };
+  }, [importSaveData]);
 
-  const handleDebugStamp = (e: React.FormEvent) => {
+  const handleDebugStamp = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (debugDate) {
       debugStampDate(debugDate);
@@ -129,9 +118,9 @@ function App() {
       setTimeout(() => setJustStamped(false), 2000);
       alert(`已成功模擬 ${debugDate} 的打卡紀錄！`);
     }
-  };
+  }, [debugDate, debugStampDate]);
 
-  const handleDebugRangeStamp = (e: React.FormEvent) => {
+  const handleDebugRangeStamp = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (debugStartDate && debugEndDate) {
       if (new Date(debugStartDate) > new Date(debugEndDate)) {
@@ -143,9 +132,46 @@ function App() {
       setTimeout(() => setJustStamped(false), 2000);
       alert(`已成功模擬 ${debugStartDate} 至 ${debugEndDate} 的區間打卡！`);
     }
-  };
+  }, [debugStartDate, debugEndDate, debugStampRange]);
 
-  const currentMonthCount = getMonthlyCount(new Date().getFullYear(), new Date().getMonth());
+  const currentMonthCount = useMemo(() => 
+    getMonthlyCount(new Date().getFullYear(), new Date().getMonth()),
+    [getMonthlyCount]
+  );
+
+  // Memoized callbacks for child components
+  const handleSwitchHabit = useCallback((id: string) => switchHabit(id), [switchHabit]);
+  const handleOpenAddModal = useCallback(() => setShowAddModal(true), []);
+  const handleOpenCompendium = useCallback(() => setShowCompendium(true), []);
+  const handleCloseCompendium = useCallback(() => setShowCompendium(false), []);
+  const handleCloseHallOfFame = useCallback(() => setShowHallOfFame(false), []);
+  const handleCloseAchievements = useCallback(() => setShowAchievements(false), []);
+  const handleShowAchievements = useCallback(() => setShowAchievements(true), []);
+  const handleGoToWorld = useCallback(() => setCurrentView('world'), []);
+  const handleToggleSettings = useCallback(() => setShowSettings(prev => !prev), []);
+  const handleCloseSettings = useCallback(() => setShowSettings(false), []);
+  const handleShowHallOfFame = useCallback(() => { setShowHallOfFame(true); setShowSettings(false); }, []);
+  const handleDismissToast = useCallback(() => {
+    if (newlyUnlockedAchievements.length > 0) {
+      dismissToast(newlyUnlockedAchievements[0].id);
+    }
+  }, [newlyUnlockedAchievements, dismissToast]);
+  const handleBackFromWorld = useCallback(() => setCurrentView('habits'), []);
+  const handleSetCalendarModeSingle = useCallback(() => setCalendarMode('single'), []);
+  const handleSetCalendarModeOverall = useCallback(() => setCalendarMode('overall'), []);
+
+  // Early returns AFTER all hooks
+  if (!isLoaded) return <div className="h-screen w-full bg-slate-50 flex items-center justify-center text-slate-400 font-medium">載入中...</div>;
+
+  // Initial Onboarding (if no habits exist)
+  if (!gameState.isOnboarded) {
+    return <Onboarding onComplete={(name, icon, color, stampColor) => addHabit(name, icon, color, stampColor)} />;
+  }
+
+  // Safety check
+  if (!activeHabit) {
+      return <div>Loading habit...</div>;
+  }
 
   // --- WORLD VIEW RENDER ---
   if (currentView === 'world') {
@@ -154,7 +180,7 @@ function App() {
               <div className="w-full max-w-5xl bg-white rounded-[2.5rem] shadow-xl p-4 lg:p-8 min-h-[90vh]">
                   <WorldView 
                       gameState={gameState}
-                      onBack={() => setCurrentView('habits')}
+                      onBack={handleBackFromWorld}
                       buyDecoration={buyDecoration}
                       placeDecoration={placeDecoration}
                       removeDecoration={removeDecoration}
@@ -168,7 +194,7 @@ function App() {
               {newlyUnlockedAchievements.length > 0 && (
                   <AchievementToast 
                       achievement={newlyUnlockedAchievements[0]} 
-                      onDismiss={() => dismissToast(newlyUnlockedAchievements[0].id)} 
+                      onDismiss={handleDismissToast} 
                   />
               )}
           </div>
@@ -183,7 +209,7 @@ function App() {
       {newlyUnlockedAchievements.length > 0 && (
           <AchievementToast 
               achievement={newlyUnlockedAchievements[0]} 
-              onDismiss={() => dismissToast(newlyUnlockedAchievements[0].id)} 
+              onDismiss={handleDismissToast} 
           />
       )}
 
@@ -212,7 +238,7 @@ function App() {
       {showCompendium && (
           <Compendium 
             unlockedPetIds={gameState.unlockedPets} 
-            onClose={() => setShowCompendium(false)} 
+            onClose={handleCloseCompendium} 
           />
       )}
 
@@ -220,7 +246,7 @@ function App() {
       {showHallOfFame && (
           <HallOfFame 
             retiredPets={gameState.retiredPets}
-            onClose={() => setShowHallOfFame(false)}
+            onClose={handleCloseHallOfFame}
           />
       )}
 
@@ -228,7 +254,7 @@ function App() {
       {showAchievements && (
           <AchievementList 
             unlockedIds={gameState.unlockedAchievements}
-            onClose={() => setShowAchievements(false)}
+            onClose={handleCloseAchievements}
           />
       )}
 
@@ -245,7 +271,7 @@ function App() {
             <div className="flex items-center gap-2 relative z-40">
                 {/* Achievement Button */}
                 <button 
-                    onClick={() => setShowAchievements(true)}
+                    onClick={handleShowAchievements}
                     className="p-3 bg-amber-50 hover:bg-amber-100 rounded-full text-amber-600 transition-all shadow-sm border border-amber-200"
                     title="成就"
                 >
@@ -254,7 +280,7 @@ function App() {
 
                 {/* World Map Toggle Button */}
                 <button 
-                    onClick={() => setCurrentView('world')}
+                    onClick={handleGoToWorld}
                     className="flex items-center gap-2 px-4 py-3 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-full font-bold transition-all shadow-sm border border-indigo-100"
                 >
                     <MapIcon size={20} />
@@ -262,7 +288,7 @@ function App() {
                 </button>
 
                 <button 
-                    onClick={() => setShowSettings(!showSettings)}
+                    onClick={handleToggleSettings}
                     className="p-3 bg-white hover:bg-slate-100 rounded-full text-slate-500 transition-all shadow-sm border border-slate-200"
                     title="設定"
                 >
@@ -272,12 +298,12 @@ function App() {
             {/* Settings Dropdown */}
             <SettingsDropdown
               isOpen={showSettings}
-              onClose={() => setShowSettings(false)}
+              onClose={handleCloseSettings}
               gameState={gameState}
               activeHabit={activeHabit}
               onExportData={handleExportData}
               onImportClick={handleImportClick}
-              onShowHallOfFame={() => { setShowHallOfFame(true); setShowSettings(false); }}
+              onShowHallOfFame={handleShowHallOfFame}
               onResetProgress={resetProgress}
               updateStampStyle={updateStampStyle}
               setCalendarStyle={setCalendarStyle}
@@ -297,9 +323,9 @@ function App() {
         {/* Habit Switcher Bar */}
         <HabitSwitcher 
             gameState={gameState} 
-            onSwitch={switchHabit} 
-            onAdd={() => setShowAddModal(true)} 
-            onOpenCompendium={() => setShowCompendium(true)}
+            onSwitch={handleSwitchHabit} 
+            onAdd={handleOpenAddModal} 
+            onOpenCompendium={handleOpenCompendium}
         />
       </header>
 
@@ -327,13 +353,13 @@ function App() {
           <div className="flex justify-end px-2 -mb-2 z-10">
               <div className="bg-slate-100 p-1 rounded-xl flex gap-1 shadow-inner">
                   <button 
-                     onClick={() => setCalendarMode('single')}
+                     onClick={handleSetCalendarModeSingle}
                      className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${calendarMode === 'single' ? 'bg-white text-orange-500 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                   >
                       <CalendarIcon size={14} /> 單項
                   </button>
                   <button 
-                     onClick={() => setCalendarMode('overall')}
+                     onClick={handleSetCalendarModeOverall}
                      className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${calendarMode === 'overall' ? 'bg-white text-indigo-500 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                   >
                       <LayoutGrid size={14} /> 整體

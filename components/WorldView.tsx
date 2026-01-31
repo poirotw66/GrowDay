@@ -406,7 +406,7 @@ const WorldView: React.FC<Props> = ({
                               <button
                                 key={petId}
                                 onClick={() => {
-                                    placePetInArea(currentArea.id, petId, 'ADULT'); 
+                                    placePetInArea(currentArea.id, petId, PetStage.ADULT); 
                                     setShowPetSelector(false);
                                 }}
                                 className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col items-center gap-2 hover:bg-emerald-50 hover:border-emerald-200 transition-all"

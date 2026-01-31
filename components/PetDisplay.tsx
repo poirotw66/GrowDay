@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback, memo } from 'react';
 import { getStageConfig, STAGE_THRESHOLDS } from '../utils/gameLogic';
 import { Habit, PetStage } from '../types';
 import { PartyPopper, Info, X, Medal, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
@@ -12,8 +12,8 @@ interface Props {
   onRetire: (id: string) => void;
 }
 
-const PetDisplay: React.FC<Props> = ({ habit, justStamped, className = "", onRetire }) => {
-  const config = getStageConfig(habit.currentLevel, habit.petColor);
+const PetDisplay: React.FC<Props> = memo(function PetDisplay({ habit, justStamped, className = "", onRetire }) {
+  const config = useMemo(() => getStageConfig(habit.currentLevel, habit.petColor), [habit.currentLevel, habit.petColor]);
   const [showInfo, setShowInfo] = useState(false);
   const [showRetireConfirm, setShowRetireConfirm] = useState(false);
   
@@ -24,44 +24,59 @@ const PetDisplay: React.FC<Props> = ({ habit, justStamped, className = "", onRet
   
   // Bounce when justStamped is true - directly use prop as animation trigger
   const shouldBounce = justStamped;
-  const currentEmoji = getPetEmoji(habit.petId, config.stage);
+  const currentEmoji = useMemo(() => getPetEmoji(habit.petId, config.stage), [habit.petId, config.stage]);
   const isMaxLevel = habit.currentLevel >= STAGE_THRESHOLDS.ADULT;
 
-  // Next level progress calculation (Bar)
-  const expForCurrentLevel = (habit.currentLevel - 1) * 10;
-  const progressInLevel = habit.totalExp - expForCurrentLevel;
-  const progressPercent = Math.min(100, Math.max(0, (progressInLevel / 10) * 100));
+  // Next level progress calculation (Bar) - memoized
+  const { progressPercent, daysToNextStage, nextStageName } = useMemo(() => {
+    const expForCurrentLevel = (habit.currentLevel - 1) * 10;
+    const progressInLevel = habit.totalExp - expForCurrentLevel;
+    const percent = Math.min(100, Math.max(0, (progressInLevel / 10) * 100));
+    
+    let target = 0;
+    let stageName = '';
+    
+    if (habit.currentLevel < STAGE_THRESHOLDS.BABY) {
+      target = STAGE_THRESHOLDS.BABY;
+      stageName = '幼年期';
+    } else if (habit.currentLevel < STAGE_THRESHOLDS.CHILD) {
+      target = STAGE_THRESHOLDS.CHILD;
+      stageName = '成長期';
+    } else if (habit.currentLevel < STAGE_THRESHOLDS.ADULT) {
+      target = STAGE_THRESHOLDS.ADULT;
+      stageName = '完全體';
+    }
+    
+    const days = target > 0 ? target - habit.currentLevel : 0;
+    
+    return { progressPercent: percent, daysToNextStage: days, nextStageName: stageName };
+  }, [habit.currentLevel, habit.totalExp]);
 
-  // Next Stage Calculation (Guide)
-  let nextStageTarget = 0;
-  let nextStageName = '';
-  
-  if (habit.currentLevel < STAGE_THRESHOLDS.BABY) {
-    nextStageTarget = STAGE_THRESHOLDS.BABY;
-    nextStageName = '幼年期';
-  } else if (habit.currentLevel < STAGE_THRESHOLDS.CHILD) {
-    nextStageTarget = STAGE_THRESHOLDS.CHILD;
-    nextStageName = '成長期';
-  } else if (habit.currentLevel < STAGE_THRESHOLDS.ADULT) {
-    nextStageTarget = STAGE_THRESHOLDS.ADULT;
-    nextStageName = '完全體';
-  }
-
-  const daysToNextStage = nextStageTarget > 0 ? nextStageTarget - habit.currentLevel : 0;
-
-  // Stages definition for the timeline UI
-  const timelineStages = [
+  // Stages definition for the timeline UI - memoized
+  const timelineStages = useMemo(() => [
       { label: '孵化期', range: `Lv.1 - ${STAGE_THRESHOLDS.BABY - 1}`, emoji: getPetEmoji(habit.petId, PetStage.EGG), reached: true },
       { label: '幼年期', range: `Lv.${STAGE_THRESHOLDS.BABY} - ${STAGE_THRESHOLDS.CHILD - 1}`, emoji: getPetEmoji(habit.petId, PetStage.BABY), reached: habit.currentLevel >= STAGE_THRESHOLDS.BABY },
       { label: '成長期', range: `Lv.${STAGE_THRESHOLDS.CHILD} - ${STAGE_THRESHOLDS.ADULT - 1}`, emoji: getPetEmoji(habit.petId, PetStage.CHILD), reached: habit.currentLevel >= STAGE_THRESHOLDS.CHILD },
       { label: '完全體', range: `Lv.${STAGE_THRESHOLDS.ADULT}+`, emoji: getPetEmoji(habit.petId, PetStage.ADULT), reached: habit.currentLevel >= STAGE_THRESHOLDS.ADULT },
-  ];
+  ], [habit.petId, habit.currentLevel]);
+
+  // Memoized callbacks
+  const handleExpand = useCallback(() => setManualExpand(true), []);
+  const handleCollapse = useCallback((e: React.MouseEvent) => { e.stopPropagation(); setManualExpand(false); }, []);
+  const handleShowInfo = useCallback(() => setShowInfo(true), []);
+  const handleCloseInfo = useCallback(() => setShowInfo(false), []);
+  const handleShowRetireConfirm = useCallback(() => setShowRetireConfirm(true), []);
+  const handleCloseRetireConfirm = useCallback(() => setShowRetireConfirm(false), []);
+  const handleRetire = useCallback(() => {
+    onRetire(habit.id);
+    setShowRetireConfirm(false);
+  }, [onRetire, habit.id]);
 
   // --- COMPACT VIEW (DEFAULT) ---
   if (!isExpanded) {
       return (
           <div 
-             onClick={() => setManualExpand(true)}
+             onClick={handleExpand}
              className={`w-full ${config.colorBg} rounded-3xl p-4 shadow-sm flex items-center justify-between cursor-pointer hover:brightness-95 transition-all ${className}`}
           >
               <div className="flex items-center gap-4">
@@ -108,7 +123,7 @@ const PetDisplay: React.FC<Props> = ({ habit, justStamped, className = "", onRet
 
       {/* Collapse Button (Top Left - Replaces Info, Info moved next to name) */}
       <button 
-        onClick={(e) => { e.stopPropagation(); setManualExpand(false); }}
+        onClick={handleCollapse}
         className="absolute top-8 left-8 p-2 bg-white/50 hover:bg-white/80 rounded-full text-slate-600 transition-colors z-20"
         title="收起"
       >
@@ -155,7 +170,7 @@ const PetDisplay: React.FC<Props> = ({ habit, justStamped, className = "", onRet
                 {habit.name}
             </h2>
             <button 
-                onClick={() => setShowInfo(true)}
+                onClick={handleShowInfo}
                 className="p-1.5 bg-white/40 hover:bg-white/60 rounded-full text-slate-600 transition-colors"
                 title="成長指南"
             >
@@ -172,7 +187,7 @@ const PetDisplay: React.FC<Props> = ({ habit, justStamped, className = "", onRet
       <div className="absolute bottom-0 w-full">
          {isMaxLevel ? (
              <button 
-                onClick={() => setShowRetireConfirm(true)}
+                onClick={handleShowRetireConfirm}
                 className="w-full py-4 bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold text-lg flex items-center justify-center gap-2 hover:brightness-110 transition-all shadow-inner animate-pulse"
              >
                  <Medal size={20} />
@@ -202,17 +217,14 @@ const PetDisplay: React.FC<Props> = ({ habit, justStamped, className = "", onRet
              </p>
              <div className="flex flex-col gap-3 w-full max-w-xs">
                  <button 
-                    onClick={() => {
-                        onRetire(habit.id);
-                        setShowRetireConfirm(false);
-                    }}
+                    onClick={handleRetire}
                     className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl hover:scale-105 transition-transform"
                  >
                      <Sparkles size={18} className="text-amber-400" />
                      確認傳承
                  </button>
                  <button 
-                    onClick={() => setShowRetireConfirm(false)}
+                    onClick={handleCloseRetireConfirm}
                     className="w-full py-3 text-slate-400 font-bold hover:text-slate-600"
                  >
                      稍後再說
@@ -229,7 +241,7 @@ const PetDisplay: React.FC<Props> = ({ habit, justStamped, className = "", onRet
                     <span className="text-2xl">🌱</span> 成長指南
                 </h3>
                 <button 
-                    onClick={() => setShowInfo(false)}
+                    onClick={handleCloseInfo}
                     className="p-2 hover:bg-slate-100 rounded-full text-slate-500"
                 >
                     <X size={24} />
@@ -302,6 +314,6 @@ const PetDisplay: React.FC<Props> = ({ habit, justStamped, className = "", onRet
       `}</style>
     </div>
   );
-};
+});
 
 export default PetDisplay;

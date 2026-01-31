@@ -1,48 +1,41 @@
-
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React, { ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 
-interface Props {
+interface ErrorBoundaryProps {
   children: ReactNode;
   fallback?: ReactNode;
 }
 
-interface State {
+interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
   errorInfo: ErrorInfo | null;
 }
 
-class ErrorBoundary extends Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    this.state = {
-      hasError: false,
-      error: null,
-      errorInfo: null,
-    };
-  }
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  public state: ErrorBoundaryState = {
+    hasError: false,
+    error: null,
+    errorInfo: null,
+  };
 
-  static getDerivedStateFromError(error: Error): Partial<State> {
+  public static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+  public componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     this.setState({ errorInfo });
     
     // Log error to console for debugging
     console.error('ErrorBoundary caught an error:', error);
     console.error('Error info:', errorInfo);
-    
-    // You could also log to an error reporting service here
-    // e.g., Sentry, LogRocket, etc.
   }
 
-  handleReload = (): void => {
+  private handleReload = (): void => {
     window.location.reload();
   };
 
-  handleReset = (): void => {
+  private handleReset = (): void => {
     this.setState({
       hasError: false,
       error: null,
@@ -50,14 +43,14 @@ class ErrorBoundary extends Component<Props, State> {
     });
   };
 
-  handleClearDataAndReload = (): void => {
+  private handleClearDataAndReload = (): void => {
     if (window.confirm('確定要清除所有資料並重新開始嗎？這個操作無法復原。')) {
       localStorage.clear();
       window.location.reload();
     }
   };
 
-  render(): ReactNode {
+  public render(): ReactNode {
     if (this.state.hasError) {
       // Custom fallback UI
       if (this.props.fallback) {
