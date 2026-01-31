@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { useHabitEngine } from './hooks/useHabitEngine';
+import { useTheme } from './contexts/ThemeContext';
 import PetDisplay from './components/PetDisplay';
 import CalendarView from './components/CalendarView';
 import OverallCalendarView from './components/OverallCalendarView';
@@ -13,7 +14,9 @@ import HallOfFame from './components/HallOfFame';
 import AchievementList from './components/AchievementList';
 import AchievementToast from './components/AchievementToast';
 import SettingsDropdown from './components/SettingsDropdown';
-import { Sprout, Map as MapIcon, Calendar as CalendarIcon, LayoutGrid, Trophy, Settings } from 'lucide-react';
+import StatsChart from './components/StatsChart';
+import ThemeToggle from './components/ThemeToggle';
+import { Sprout, Map as MapIcon, Calendar as CalendarIcon, LayoutGrid, Trophy, Settings, BarChart3 } from 'lucide-react';
 import { playStampSound } from './utils/audio';
 
 function App() {
@@ -53,6 +56,10 @@ function App() {
   const [showCompendium, setShowCompendium] = useState(false);
   const [showHallOfFame, setShowHallOfFame] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
+  const [showStatsChart, setShowStatsChart] = useState(false);
+  
+  // Theme hook
+  const { resolvedTheme } = useTheme();
   
   // File Input Ref
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -147,6 +154,8 @@ function App() {
   const handleCloseHallOfFame = useCallback(() => setShowHallOfFame(false), []);
   const handleCloseAchievements = useCallback(() => setShowAchievements(false), []);
   const handleShowAchievements = useCallback(() => setShowAchievements(true), []);
+  const handleOpenStatsChart = useCallback(() => setShowStatsChart(true), []);
+  const handleCloseStatsChart = useCallback(() => setShowStatsChart(false), []);
   const handleGoToWorld = useCallback(() => setCurrentView('world'), []);
   const handleToggleSettings = useCallback(() => setShowSettings(prev => !prev), []);
   const handleCloseSettings = useCallback(() => setShowSettings(false), []);
@@ -161,7 +170,7 @@ function App() {
   const handleSetCalendarModeOverall = useCallback(() => setCalendarMode('overall'), []);
 
   // Early returns AFTER all hooks
-  if (!isLoaded) return <div className="h-screen w-full bg-slate-50 flex items-center justify-center text-slate-400 font-medium">載入中...</div>;
+  if (!isLoaded) return <div className="h-screen w-full bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-400 dark:text-slate-500 font-medium">載入中...</div>;
 
   // Initial Onboarding (if no habits exist)
   if (!gameState.isOnboarded) {
@@ -170,14 +179,14 @@ function App() {
 
   // Safety check
   if (!activeHabit) {
-      return <div>Loading habit...</div>;
+      return <div className="dark:bg-slate-900 dark:text-white">Loading habit...</div>;
   }
 
   // --- WORLD VIEW RENDER ---
   if (currentView === 'world') {
       return (
-          <div className="min-h-screen bg-slate-50 font-sans text-slate-900 p-4 lg:p-8 relative flex flex-col items-center">
-              <div className="w-full max-w-5xl bg-white rounded-[2.5rem] shadow-xl p-4 lg:p-8 min-h-[90vh]">
+          <div className="min-h-screen bg-slate-50 dark:bg-slate-900 font-sans text-slate-900 dark:text-white p-4 lg:p-8 relative flex flex-col items-center transition-colors duration-300">
+              <div className="w-full max-w-5xl bg-white dark:bg-slate-800 rounded-[2.5rem] shadow-xl p-4 lg:p-8 min-h-[90vh] transition-colors duration-300">
                   <WorldView 
                       gameState={gameState}
                       onBack={handleBackFromWorld}
@@ -203,7 +212,7 @@ function App() {
 
   // --- MAIN HABIT VIEW RENDER ---
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 p-4 lg:p-8 relative">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 font-sans text-slate-900 dark:text-white p-4 lg:p-8 relative transition-colors duration-300">
       
       {/* Toast Notification Layer */}
       {newlyUnlockedAchievements.length > 0 && (
@@ -258,6 +267,14 @@ function App() {
           />
       )}
 
+      {/* Stats Chart Modal */}
+      {showStatsChart && activeHabit && (
+          <StatsChart 
+            habit={activeHabit}
+            onClose={handleCloseStatsChart}
+          />
+      )}
+
       {/* Navbar / Header */}
       <header className="max-w-7xl mx-auto mb-6">
         <div className="flex justify-between items-center px-2 mb-4">
@@ -265,14 +282,26 @@ function App() {
             <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-amber-500 rounded-xl flex items-center justify-center text-white shadow-lg">
                 <Sprout size={24} fill="currentColor" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-800 tracking-tight">GrowDay</h1>
+            <h1 className="text-2xl font-bold text-slate-800 dark:text-white tracking-tight">GrowDay</h1>
             </div>
 
             <div className="flex items-center gap-2 relative z-40">
+                {/* Theme Toggle */}
+                <ThemeToggle />
+
+                {/* Stats Chart Button */}
+                <button 
+                    onClick={handleOpenStatsChart}
+                    className="p-3 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/50 rounded-full text-purple-600 dark:text-purple-400 transition-all shadow-sm border border-purple-200 dark:border-purple-700"
+                    title="統計圖表"
+                >
+                    <BarChart3 size={20} />
+                </button>
+
                 {/* Achievement Button */}
                 <button 
                     onClick={handleShowAchievements}
-                    className="p-3 bg-amber-50 hover:bg-amber-100 rounded-full text-amber-600 transition-all shadow-sm border border-amber-200"
+                    className="p-3 bg-amber-50 dark:bg-amber-900/30 hover:bg-amber-100 dark:hover:bg-amber-900/50 rounded-full text-amber-600 dark:text-amber-400 transition-all shadow-sm border border-amber-200 dark:border-amber-700"
                     title="成就"
                 >
                     <Trophy size={20} />
@@ -281,7 +310,7 @@ function App() {
                 {/* World Map Toggle Button */}
                 <button 
                     onClick={handleGoToWorld}
-                    className="flex items-center gap-2 px-4 py-3 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-full font-bold transition-all shadow-sm border border-indigo-100"
+                    className="flex items-center gap-2 px-4 py-3 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-full font-bold transition-all shadow-sm border border-indigo-100 dark:border-indigo-700"
                 >
                     <MapIcon size={20} />
                     <span className="hidden md:inline">前往世界</span>
@@ -289,7 +318,7 @@ function App() {
 
                 <button 
                     onClick={handleToggleSettings}
-                    className="p-3 bg-white hover:bg-slate-100 rounded-full text-slate-500 transition-all shadow-sm border border-slate-200"
+                    className="p-3 bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 rounded-full text-slate-500 dark:text-slate-300 transition-all shadow-sm border border-slate-200 dark:border-slate-600"
                     title="設定"
                 >
                     <Settings size={22} />
@@ -337,7 +366,7 @@ function App() {
           <PetDisplay 
             habit={activeHabit} 
             justStamped={justStamped} 
-            className="w-full shadow-lg border border-slate-100"
+            className="w-full shadow-lg border border-slate-100 dark:border-slate-700"
             onRetire={retireHabit}
           />
         </section>
@@ -351,16 +380,16 @@ function App() {
 
           {/* Calendar Toggle */}
           <div className="flex justify-end px-2 -mb-2 z-10">
-              <div className="bg-slate-100 p-1 rounded-xl flex gap-1 shadow-inner">
+              <div className="bg-slate-100 dark:bg-slate-700 p-1 rounded-xl flex gap-1 shadow-inner">
                   <button 
                      onClick={handleSetCalendarModeSingle}
-                     className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${calendarMode === 'single' ? 'bg-white text-orange-500 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                     className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${calendarMode === 'single' ? 'bg-white dark:bg-slate-600 text-orange-500 dark:text-orange-400 shadow-sm' : 'text-slate-400 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}
                   >
                       <CalendarIcon size={14} /> 單項
                   </button>
                   <button 
                      onClick={handleSetCalendarModeOverall}
-                     className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${calendarMode === 'overall' ? 'bg-white text-indigo-500 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                     className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${calendarMode === 'overall' ? 'bg-white dark:bg-slate-600 text-indigo-500 dark:text-indigo-400 shadow-sm' : 'text-slate-400 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}
                   >
                       <LayoutGrid size={14} /> 整體
                   </button>

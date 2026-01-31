@@ -121,6 +121,7 @@ export interface GameState {
   // Phase 5: Customization
   calendarStyle: CalendarStyle;
   selectedSound: string; // New: Audio preference
+  theme?: 'light' | 'dark' | 'system'; // Theme preference (optional for backward compatibility)
 
   // Phase 6: Achievements
   unlockedAchievements: string[]; // List of Achievement IDs

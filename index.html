@@ -21,6 +21,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
+        darkMode: 'class',
         theme: {
           extend: {
             fontFamily: {
@@ -36,6 +37,10 @@
     <style>
       body {
         -webkit-tap-highlight-color: transparent;
+      }
+      /* Smooth theme transition */
+      html {
+        transition: background-color 0.3s ease, color 0.3s ease;
       }
     </style>
     
