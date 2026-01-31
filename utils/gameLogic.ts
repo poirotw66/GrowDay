@@ -77,3 +77,11 @@ export const calculateStreak = (logs: Record<string, DayLog>, todayStr: string):
   
   return streak;
 };
+
+// Get pet stage from level
+export const getPetStage = (level: number): string => {
+  if (level < STAGE_THRESHOLDS.BABY) return 'egg';
+  if (level < STAGE_THRESHOLDS.CHILD) return 'baby';
+  if (level < STAGE_THRESHOLDS.ADULT) return 'child';
+  return 'adult';
+};

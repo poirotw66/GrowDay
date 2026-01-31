@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { useHabitEngine } from './hooks/useHabitEngine';
 import { useTheme } from './contexts/ThemeContext';
 import PetDisplay from './components/PetDisplay';
@@ -16,8 +16,12 @@ import AchievementToast from './components/AchievementToast';
 import SettingsDropdown from './components/SettingsDropdown';
 import StatsChart from './components/StatsChart';
 import ThemeToggle from './components/ThemeToggle';
-import { Sprout, Map as MapIcon, Calendar as CalendarIcon, LayoutGrid, Trophy, Settings, BarChart3 } from 'lucide-react';
+import ReminderSettingsComponent from './components/ReminderSettings';
+import GoalSettings from './components/GoalSettings';
+import ShareCard from './components/ShareCard';
+import { Sprout, Map as MapIcon, Calendar as CalendarIcon, LayoutGrid, Trophy, Settings, BarChart3, Bell, Target, Share2 } from 'lucide-react';
 import { playStampSound } from './utils/audio';
+import { startReminderChecker, stopReminderChecker, sendDailyReminder, getReminderSettings } from './utils/notifications';
 
 function App() {
   const { 
@@ -47,7 +51,10 @@ function App() {
     retireHabit,
     // Phase 6
     newlyUnlockedAchievements,
-    dismissToast
+    dismissToast,
+    // Phase 7: Goals
+    addGoal,
+    removeGoal,
   } = useHabitEngine();
 
   const [justStamped, setJustStamped] = useState(false);
@@ -57,6 +64,9 @@ function App() {
   const [showHallOfFame, setShowHallOfFame] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
   const [showStatsChart, setShowStatsChart] = useState(false);
+  const [showReminder, setShowReminder] = useState(false);
+  const [showGoals, setShowGoals] = useState(false);
+  const [showShareCard, setShowShareCard] = useState(false);
   
   // Theme hook
   const { resolvedTheme } = useTheme();
@@ -73,6 +83,17 @@ function App() {
   const [debugDate, setDebugDate] = useState('');
   const [debugStartDate, setDebugStartDate] = useState('');
   const [debugEndDate, setDebugEndDate] = useState('');
+
+  // Start reminder checker on mount
+  useEffect(() => {
+    startReminderChecker(() => {
+      const settings = getReminderSettings();
+      if (settings.enabled && activeHabit) {
+        sendDailyReminder(activeHabit.name);
+      }
+    });
+    return () => stopReminderChecker();
+  }, [activeHabit]);
 
   // All useCallback hooks MUST be defined before any early returns
   const handleStamp = useCallback(() => {
@@ -156,6 +177,12 @@ function App() {
   const handleShowAchievements = useCallback(() => setShowAchievements(true), []);
   const handleOpenStatsChart = useCallback(() => setShowStatsChart(true), []);
   const handleCloseStatsChart = useCallback(() => setShowStatsChart(false), []);
+  const handleOpenReminder = useCallback(() => setShowReminder(true), []);
+  const handleCloseReminder = useCallback(() => setShowReminder(false), []);
+  const handleOpenGoals = useCallback(() => setShowGoals(true), []);
+  const handleCloseGoals = useCallback(() => setShowGoals(false), []);
+  const handleOpenShareCard = useCallback(() => setShowShareCard(true), []);
+  const handleCloseShareCard = useCallback(() => setShowShareCard(false), []);
   const handleGoToWorld = useCallback(() => setCurrentView('world'), []);
   const handleToggleSettings = useCallback(() => setShowSettings(prev => !prev), []);
   const handleCloseSettings = useCallback(() => setShowSettings(false), []);
@@ -275,6 +302,35 @@ function App() {
           />
       )}
 
+      {/* Reminder Settings Modal */}
+      {showReminder && (
+          <ReminderSettingsComponent 
+            habitName={activeHabit?.name}
+            onClose={handleCloseReminder}
+          />
+      )}
+
+      {/* Goal Settings Modal */}
+      {showGoals && activeHabit && (
+          <GoalSettings 
+            habit={activeHabit}
+            goals={gameState.goals || []}
+            completedGoals={gameState.completedGoals || []}
+            onAddGoal={addGoal}
+            onRemoveGoal={removeGoal}
+            onClose={handleCloseGoals}
+          />
+      )}
+
+      {/* Share Card Modal */}
+      {showShareCard && activeHabit && (
+          <ShareCard 
+            habit={activeHabit}
+            gameState={gameState}
+            onClose={handleCloseShareCard}
+          />
+      )}
+
       {/* Navbar / Header */}
       <header className="max-w-7xl mx-auto mb-6">
         <div className="flex justify-between items-center px-2 mb-4">
@@ -289,6 +345,24 @@ function App() {
                 {/* Theme Toggle */}
                 <ThemeToggle />
 
+                {/* Reminder Button */}
+                <button 
+                    onClick={handleOpenReminder}
+                    className="p-3 bg-cyan-50 dark:bg-cyan-900/30 hover:bg-cyan-100 dark:hover:bg-cyan-900/50 rounded-full text-cyan-600 dark:text-cyan-400 transition-all shadow-sm border border-cyan-200 dark:border-cyan-700"
+                    title="提醒設定"
+                >
+                    <Bell size={20} />
+                </button>
+
+                {/* Goals Button */}
+                <button 
+                    onClick={handleOpenGoals}
+                    className="p-3 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-full text-indigo-600 dark:text-indigo-400 transition-all shadow-sm border border-indigo-200 dark:border-indigo-700"
+                    title="目標設定"
+                >
+                    <Target size={20} />
+                </button>
+
                 {/* Stats Chart Button */}
                 <button 
                     onClick={handleOpenStatsChart}
@@ -296,6 +370,15 @@ function App() {
                     title="統計圖表"
                 >
                     <BarChart3 size={20} />
+                </button>
+
+                {/* Share Card Button */}
+                <button 
+                    onClick={handleOpenShareCard}
+                    className="p-3 bg-pink-50 dark:bg-pink-900/30 hover:bg-pink-100 dark:hover:bg-pink-900/50 rounded-full text-pink-600 dark:text-pink-400 transition-all shadow-sm border border-pink-200 dark:border-pink-700"
+                    title="分享卡片"
+                >
+                    <Share2 size={20} />
                 </button>
 
                 {/* Achievement Button */}

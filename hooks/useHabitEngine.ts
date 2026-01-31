@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { GameState, DayLog, Habit, PetColor, PlacedItem, PlacedPet, PetStage, RetiredPet, CalendarStyle } from '../types';
+import { GameState, DayLog, Habit, PetColor, PlacedItem, PlacedPet, PetStage, RetiredPet, CalendarStyle, Goal, GoalPeriod, CompletedGoal } from '../types';
 import { calculateLevel, calculateStreak, STAGE_THRESHOLDS } from '../utils/gameLogic';
 import { getTodayString } from '../utils/dateUtils';
 import { assignRandomPet } from '../utils/petData';
@@ -8,6 +8,7 @@ import { getDefaultUnlockedIcons, DEFAULT_STAMP_COLOR } from '../utils/stampIcon
 import { INITIAL_AREAS, DECORATION_ITEMS } from '../utils/worldData';
 import { playUnlockSound } from '../utils/audio';
 import { ACHIEVEMENTS, AchievementDef } from '../utils/achievementData';
+import { calculateGoalReward, getGoalProgress, getPeriodStart, isGoalCompleted } from '../utils/goalLogic';
 
 const STORAGE_KEY = 'growday_save_v2'; 
 const OLD_STORAGE_KEY = 'growday_save_v1';
@@ -699,6 +700,69 @@ export const useHabitEngine = () => {
       setNewlyUnlockedAchievements(prev => prev.filter(a => a.id !== id));
   }, []);
 
+  // --- Goal Management ---
+  const addGoal = useCallback((habitId: string, period: GoalPeriod, targetDays: number) => {
+    const newGoal: Goal = {
+      id: `goal_${Date.now()}`,
+      habitId,
+      period,
+      targetDays,
+      coinReward: calculateGoalReward(period, targetDays),
+      createdAt: new Date().toISOString(),
+    };
+
+    setGameState(prev => ({
+      ...prev,
+      goals: [...(prev.goals || []), newGoal],
+    }));
+  }, []);
+
+  const removeGoal = useCallback((goalId: string) => {
+    setGameState(prev => ({
+      ...prev,
+      goals: (prev.goals || []).filter(g => g.id !== goalId),
+    }));
+  }, []);
+
+  // Check and complete goals
+  const checkGoalCompletion = useCallback((state: GameState): GameState => {
+    const goals = state.goals || [];
+    const completedGoals = state.completedGoals || [];
+    let totalCoinsEarned = 0;
+    const newCompletedGoals: CompletedGoal[] = [];
+
+    for (const goal of goals) {
+      const habit = state.habits[goal.habitId];
+      if (!habit) continue;
+
+      // Check if already completed this period
+      if (isGoalCompleted(goal, habit, completedGoals)) continue;
+
+      // Check if goal is met
+      const progress = getGoalProgress(goal, habit);
+      if (progress.current >= progress.target) {
+        const periodStart = getPeriodStart(goal.period);
+        newCompletedGoals.push({
+          goalId: goal.id,
+          completedAt: new Date().toISOString(),
+          periodStart: periodStart.toISOString().split('T')[0],
+        });
+        totalCoinsEarned += goal.coinReward;
+      }
+    }
+
+    if (newCompletedGoals.length > 0) {
+      playUnlockSound();
+      return {
+        ...state,
+        completedGoals: [...completedGoals, ...newCompletedGoals],
+        coins: state.coins + totalCoinsEarned,
+      };
+    }
+
+    return state;
+  }, []);
+
   return {
     gameState,
     activeHabit: gameState.activeHabitId ? gameState.habits[gameState.activeHabitId] : null,
@@ -726,6 +790,10 @@ export const useHabitEngine = () => {
     retireHabit,
     // Phase 6
     newlyUnlockedAchievements,
-    dismissToast
+    dismissToast,
+    // Phase 7: Goals
+    addGoal,
+    removeGoal,
+    checkGoalCompletion,
   };
 };

@@ -125,6 +125,28 @@ export interface GameState {
 
   // Phase 6: Achievements
   unlockedAchievements: string[]; // List of Achievement IDs
+
+  // Phase 7: Goals
+  goals?: Goal[];
+  completedGoals?: CompletedGoal[];
+}
+
+// Goal System
+export type GoalPeriod = 'weekly' | 'monthly';
+
+export interface Goal {
+  id: string;
+  habitId: string; // Which habit this goal is for
+  period: GoalPeriod;
+  targetDays: number; // How many days to complete
+  coinReward: number; // Coins earned when completed
+  createdAt: string; // ISO date string
+}
+
+export interface CompletedGoal {
+  goalId: string;
+  completedAt: string; // ISO date string
+  periodStart: string; // The start of the period when completed
 }
 
 // Define the visual stages of the pet
