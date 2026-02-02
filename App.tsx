@@ -19,7 +19,7 @@ import ThemeToggle from './components/ThemeToggle';
 import ReminderSettingsComponent from './components/ReminderSettings';
 import GoalSettings from './components/GoalSettings';
 import ShareCard from './components/ShareCard';
-import { Sprout, Map as MapIcon, Calendar as CalendarIcon, LayoutGrid, Trophy, Settings, BarChart3, Bell, Target, Share2 } from 'lucide-react';
+import { Sprout, Map as MapIcon, Calendar as CalendarIcon, LayoutGrid, Trophy, Settings, BarChart3, Bell, Target, Share2, MoreHorizontal } from 'lucide-react';
 import { playStampSound } from './utils/audio';
 import { startReminderChecker, stopReminderChecker, sendDailyReminder, getReminderSettings } from './utils/notifications';
 
@@ -67,6 +67,7 @@ function App() {
   const [showReminder, setShowReminder] = useState(false);
   const [showGoals, setShowGoals] = useState(false);
   const [showShareCard, setShowShareCard] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
   
   // Theme hook
   const { resolvedTheme } = useTheme();
@@ -195,6 +196,7 @@ function App() {
   const handleBackFromWorld = useCallback(() => setCurrentView('habits'), []);
   const handleSetCalendarModeSingle = useCallback(() => setCalendarMode('single'), []);
   const handleSetCalendarModeOverall = useCallback(() => setCalendarMode('overall'), []);
+  const handleCloseMoreMenu = useCallback(() => setShowMoreMenu(false), []);
 
   // Early returns AFTER all hooks
   if (!isLoaded) return <div className="h-screen w-full bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-400 dark:text-slate-500 font-medium">載入中...</div>;
@@ -341,59 +343,87 @@ function App() {
             <h1 className="text-2xl font-bold text-slate-800 dark:text-white tracking-tight">GrowDay</h1>
             </div>
 
-            <div className="flex items-center gap-2 relative z-40">
+            <div className="flex items-center gap-2 relative z-40 flex-wrap justify-end">
                 {/* Theme Toggle */}
                 <ThemeToggle />
 
-                {/* Reminder Button */}
-                <button 
-                    onClick={handleOpenReminder}
-                    className="p-3 bg-cyan-50 dark:bg-cyan-900/30 hover:bg-cyan-100 dark:hover:bg-cyan-900/50 rounded-full text-cyan-600 dark:text-cyan-400 transition-all shadow-sm border border-cyan-200 dark:border-cyan-700"
-                    title="提醒設定"
-                >
-                    <Bell size={20} />
-                </button>
+                {/* Desktop: show all action buttons; Mobile: show More dropdown */}
+                <div className="hidden lg:flex items-center gap-2">
+                    <button 
+                        onClick={handleOpenReminder}
+                        className="p-3 bg-cyan-50 dark:bg-cyan-900/30 hover:bg-cyan-100 dark:hover:bg-cyan-900/50 rounded-full text-cyan-600 dark:text-cyan-400 transition-all shadow-sm border border-cyan-200 dark:border-cyan-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+                        title="提醒設定"
+                    >
+                        <Bell size={20} />
+                    </button>
+                    <button 
+                        onClick={handleOpenGoals}
+                        className="p-3 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-full text-indigo-600 dark:text-indigo-400 transition-all shadow-sm border border-indigo-200 dark:border-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+                        title="目標設定"
+                    >
+                        <Target size={20} />
+                    </button>
+                    <button 
+                        onClick={handleOpenStatsChart}
+                        className="p-3 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/50 rounded-full text-purple-600 dark:text-purple-400 transition-all shadow-sm border border-purple-200 dark:border-purple-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+                        title="統計圖表"
+                    >
+                        <BarChart3 size={20} />
+                    </button>
+                    <button 
+                        onClick={handleOpenShareCard}
+                        className="p-3 bg-pink-50 dark:bg-pink-900/30 hover:bg-pink-100 dark:hover:bg-pink-900/50 rounded-full text-pink-600 dark:text-pink-400 transition-all shadow-sm border border-pink-200 dark:border-pink-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+                        title="分享卡片"
+                    >
+                        <Share2 size={20} />
+                    </button>
+                    <button 
+                        onClick={handleShowAchievements}
+                        className="p-3 bg-amber-50 dark:bg-amber-900/30 hover:bg-amber-100 dark:hover:bg-amber-900/50 rounded-full text-amber-600 dark:text-amber-400 transition-all shadow-sm border border-amber-200 dark:border-amber-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+                        title="成就"
+                    >
+                        <Trophy size={20} />
+                    </button>
+                </div>
 
-                {/* Goals Button */}
-                <button 
-                    onClick={handleOpenGoals}
-                    className="p-3 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-full text-indigo-600 dark:text-indigo-400 transition-all shadow-sm border border-indigo-200 dark:border-indigo-700"
-                    title="目標設定"
-                >
-                    <Target size={20} />
-                </button>
-
-                {/* Stats Chart Button */}
-                <button 
-                    onClick={handleOpenStatsChart}
-                    className="p-3 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/50 rounded-full text-purple-600 dark:text-purple-400 transition-all shadow-sm border border-purple-200 dark:border-purple-700"
-                    title="統計圖表"
-                >
-                    <BarChart3 size={20} />
-                </button>
-
-                {/* Share Card Button */}
-                <button 
-                    onClick={handleOpenShareCard}
-                    className="p-3 bg-pink-50 dark:bg-pink-900/30 hover:bg-pink-100 dark:hover:bg-pink-900/50 rounded-full text-pink-600 dark:text-pink-400 transition-all shadow-sm border border-pink-200 dark:border-pink-700"
-                    title="分享卡片"
-                >
-                    <Share2 size={20} />
-                </button>
-
-                {/* Achievement Button */}
-                <button 
-                    onClick={handleShowAchievements}
-                    className="p-3 bg-amber-50 dark:bg-amber-900/30 hover:bg-amber-100 dark:hover:bg-amber-900/50 rounded-full text-amber-600 dark:text-amber-400 transition-all shadow-sm border border-amber-200 dark:border-amber-700"
-                    title="成就"
-                >
-                    <Trophy size={20} />
-                </button>
+                {/* Mobile: More menu dropdown */}
+                <div className="relative lg:hidden">
+                    <button 
+                        onClick={() => setShowMoreMenu(prev => !prev)}
+                        className="p-3 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-full text-slate-600 dark:text-slate-300 transition-all shadow-sm border border-slate-200 dark:border-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+                        title="更多功能"
+                        aria-expanded={showMoreMenu}
+                    >
+                        <MoreHorizontal size={20} />
+                    </button>
+                    {showMoreMenu && (
+                        <>
+                            <div className="fixed inset-0 z-30" aria-hidden onClick={handleCloseMoreMenu} />
+                            <div className="absolute right-0 top-full mt-2 py-2 w-52 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 z-40 animate-in fade-in slide-in-from-top-2">
+                                <button onClick={() => { handleOpenReminder(); handleCloseMoreMenu(); }} className="w-full flex items-center gap-3 px-4 py-3 text-left text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-colors">
+                                    <Bell size={20} className="text-cyan-500 shrink-0" /> 提醒設定
+                                </button>
+                                <button onClick={() => { handleOpenGoals(); handleCloseMoreMenu(); }} className="w-full flex items-center gap-3 px-4 py-3 text-left text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-colors">
+                                    <Target size={20} className="text-indigo-500 shrink-0" /> 目標設定
+                                </button>
+                                <button onClick={() => { handleOpenStatsChart(); handleCloseMoreMenu(); }} className="w-full flex items-center gap-3 px-4 py-3 text-left text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-colors">
+                                    <BarChart3 size={20} className="text-purple-500 shrink-0" /> 統計圖表
+                                </button>
+                                <button onClick={() => { handleOpenShareCard(); handleCloseMoreMenu(); }} className="w-full flex items-center gap-3 px-4 py-3 text-left text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-colors">
+                                    <Share2 size={20} className="text-pink-500 shrink-0" /> 分享卡片
+                                </button>
+                                <button onClick={() => { handleShowAchievements(); handleCloseMoreMenu(); }} className="w-full flex items-center gap-3 px-4 py-3 text-left text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-colors">
+                                    <Trophy size={20} className="text-amber-500 shrink-0" /> 成就
+                                </button>
+                            </div>
+                        </>
+                    )}
+                </div>
 
                 {/* World Map Toggle Button */}
                 <button 
                     onClick={handleGoToWorld}
-                    className="flex items-center gap-2 px-4 py-3 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-full font-bold transition-all shadow-sm border border-indigo-100 dark:border-indigo-700"
+                    className="flex items-center gap-2 px-4 py-3 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-full font-bold transition-all shadow-sm border border-indigo-100 dark:border-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
                 >
                     <MapIcon size={20} />
                     <span className="hidden md:inline">前往世界</span>
@@ -401,7 +431,7 @@ function App() {
 
                 <button 
                     onClick={handleToggleSettings}
-                    className="p-3 bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 rounded-full text-slate-500 dark:text-slate-300 transition-all shadow-sm border border-slate-200 dark:border-slate-600"
+                    className="p-3 bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 rounded-full text-slate-500 dark:text-slate-300 transition-all shadow-sm border border-slate-200 dark:border-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
                     title="設定"
                 >
                     <Settings size={22} />
@@ -441,60 +471,72 @@ function App() {
         />
       </header>
 
-      {/* Main Content Grid */}
-      <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 lg:h-[calc(100vh-10rem)]">
+      {/* Main Content Grid: Calendar gets enough space to show fully (no scroll container). Page scrolls when needed. */}
+      <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
         
-        {/* Left Column: Pet World (Taking up 7 columns on desktop) */}
-        <section className="lg:col-span-7 flex flex-col min-h-min transition-all duration-500">
+        {/* Left Column: Pet + Stats (4 columns on desktop) */}
+        <section className="lg:col-span-4 flex flex-col gap-3 lg:gap-4 order-2 lg:order-1">
           <PetDisplay 
             habit={activeHabit} 
             justStamped={justStamped} 
-            className="w-full shadow-lg border border-slate-100 dark:border-slate-700"
+            className="w-full shadow-lg border border-slate-100 dark:border-slate-700 flex-shrink-0"
             onRetire={retireHabit}
           />
-        </section>
-
-        {/* Right Column: Stats & Calendar (Taking up 5 columns on desktop) */}
-        <section className="lg:col-span-5 flex flex-col gap-6 lg:h-full">
-          {/* Top: Stats (Only for single habit, but we keep it here as context) */}
           <div className="flex-shrink-0">
             <StatsBar habit={activeHabit} monthlyCount={currentMonthCount} />
           </div>
+        </section>
 
+        {/* Right Column: Calendar (8 columns) – enough space for full calendar, no scroll */}
+        <section className="lg:col-span-8 flex flex-col gap-3 lg:gap-4 order-1 lg:order-2">
           {/* Calendar Toggle */}
-          <div className="flex justify-end px-2 -mb-2 z-10">
+          <div className="flex justify-end px-2 flex-shrink-0 z-10">
               <div className="bg-slate-100 dark:bg-slate-700 p-1 rounded-xl flex gap-1 shadow-inner">
                   <button 
                      onClick={handleSetCalendarModeSingle}
-                     className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${calendarMode === 'single' ? 'bg-white dark:bg-slate-600 text-orange-500 dark:text-orange-400 shadow-sm' : 'text-slate-400 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}
+                     className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-800 ${calendarMode === 'single' ? 'bg-white dark:bg-slate-600 text-orange-500 dark:text-orange-400 shadow-sm' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-200'}`}
                   >
                       <CalendarIcon size={14} /> 單項
                   </button>
                   <button 
                      onClick={handleSetCalendarModeOverall}
-                     className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${calendarMode === 'overall' ? 'bg-white dark:bg-slate-600 text-indigo-500 dark:text-indigo-400 shadow-sm' : 'text-slate-400 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}
+                     className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-800 ${calendarMode === 'overall' ? 'bg-white dark:bg-slate-600 text-indigo-500 dark:text-indigo-400 shadow-sm' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-200'}`}
                   >
                       <LayoutGrid size={14} /> 整體
                   </button>
               </div>
           </div>
 
-          {/* Bottom: Calendar */}
-          <div className="flex-1 min-h-[450px]">
+          {/* Calendar: min-height so full calendar + button fit; no scroll container */}
+          <div className="relative min-h-[540px] rounded-[2rem] overflow-hidden bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-lg">
+            {/* Dot grid background – light theme */}
+            <div
+              className="absolute inset-0 pointer-events-none z-0 dark:hidden"
+              style={{ backgroundImage: 'radial-gradient(rgb(229, 231, 235) 1px, transparent 1px)', backgroundSize: '20px 20px' }}
+              aria-hidden
+            />
+            {/* Dot grid background – dark theme */}
+            <div
+              className="absolute inset-0 pointer-events-none z-0 hidden dark:block"
+              style={{ backgroundImage: 'radial-gradient(rgb(71, 85, 105) 1px, transparent 1px)', backgroundSize: '20px 20px' }}
+              aria-hidden
+            />
+            <div className="relative z-10 flex flex-col p-3 md:p-5">
              {calendarMode === 'single' ? (
                 <CalendarView 
                   habit={activeHabit} 
                   onStamp={handleStamp}
                   isTodayStamped={isTodayStamped()}
-                  style={gameState.calendarStyle} // Pass the style
+                  style={gameState.calendarStyle}
                   selectedSound={gameState.selectedSound}
                 />
              ) : (
                 <OverallCalendarView 
                     habits={gameState.habits} 
-                    style={gameState.calendarStyle} // Pass the style
+                    style={gameState.calendarStyle}
                 />
              )}
+            </div>
           </div>
         </section>
 

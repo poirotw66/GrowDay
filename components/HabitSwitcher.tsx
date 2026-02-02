@@ -24,13 +24,14 @@ const HabitSwitcher: React.FC<Props> = memo(function HabitSwitcher({ gameState, 
                onClick={() => onSwitch(habit.id)}
                className={`
                   flex items-center gap-2 px-4 py-2 rounded-full border transition-all whitespace-nowrap
+                  focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900
                   ${isActive 
-                     ? `border-slate-800 bg-slate-800 text-white shadow-lg scale-105` 
-                     : `border-slate-200 bg-white text-slate-600 hover:bg-slate-50`
+                     ? `border-slate-800 dark:border-orange-500 bg-slate-800 dark:bg-orange-500 text-white shadow-lg scale-105` 
+                     : `border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600`
                   }
                `}
              >
-                <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-white' : 'bg-slate-400'}`}></div>
+                <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-white' : 'bg-slate-400 dark:bg-slate-500'}`}></div>
                 <span className="font-bold text-sm">{habit.name}</span>
                 {isActive && <span className="ml-1 text-xs opacity-70">Lv.{habit.currentLevel}</span>}
              </button>
@@ -40,17 +41,17 @@ const HabitSwitcher: React.FC<Props> = memo(function HabitSwitcher({ gameState, 
        {/* Add New Button */}
        <button
           onClick={onAdd}
-          className="flex items-center gap-1 px-3 py-2 rounded-full border border-dashed border-slate-300 text-slate-500 hover:border-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all whitespace-nowrap text-sm font-medium"
+          className="flex items-center gap-1 px-3 py-2 rounded-full border border-dashed border-slate-300 dark:border-slate-500 text-slate-500 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 transition-all whitespace-nowrap text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
        >
           <Plus size={14} /> 新增
        </button>
        
-       <div className="w-px h-6 bg-slate-200 mx-1"></div>
+       <div className="w-px h-6 bg-slate-200 dark:bg-slate-600 mx-1 shrink-0"></div>
 
         {/* Compendium Button */}
        <button
           onClick={onOpenCompendium}
-          className="flex items-center gap-2 px-3 py-2 rounded-full bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-all whitespace-nowrap text-sm font-bold"
+          className="flex items-center gap-2 px-3 py-2 rounded-full bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-all whitespace-nowrap text-sm font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
        >
           <Book size={14} /> 圖鑑
        </button>

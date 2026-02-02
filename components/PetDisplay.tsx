@@ -205,12 +205,12 @@ const PetDisplay: React.FC<Props> = memo(function PetDisplay({ habit, justStampe
 
       {/* Retirement Confirmation Modal */}
       {showRetireConfirm && (
-          <div className="absolute inset-0 z-50 bg-white/95 backdrop-blur-md p-8 flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-200">
+          <div className="absolute inset-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-8 flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-200">
              <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center text-4xl mb-6 shadow-sm">
                  <Medal size={40} className="text-amber-500" />
              </div>
-             <h3 className="text-2xl font-bold text-slate-800 mb-2">精靈傳承</h3>
-             <p className="text-slate-500 text-center mb-8 leading-relaxed max-w-xs">
+             <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">精靈傳承</h3>
+             <p className="text-slate-500 dark:text-slate-400 text-center mb-8 leading-relaxed max-w-xs">
                  恭喜！您的精靈已經達到完美型態。<br/><br/>
                  選擇「退休」將使牠進入榮譽殿堂，並為您提供 <strong className="text-amber-600">永久金幣加成 +10%</strong>。<br/>
                  此習慣將繼承意志，孵化出一顆新蛋（第 {habit.generation ? habit.generation + 1 : 2} 世代）。
@@ -225,7 +225,7 @@ const PetDisplay: React.FC<Props> = memo(function PetDisplay({ habit, justStampe
                  </button>
                  <button 
                     onClick={handleCloseRetireConfirm}
-                    className="w-full py-3 text-slate-400 font-bold hover:text-slate-600"
+                    className="w-full py-3 text-slate-400 dark:text-slate-500 font-bold hover:text-slate-600 dark:hover:text-slate-300"
                  >
                      稍後再說
                  </button>
@@ -242,7 +242,7 @@ const PetDisplay: React.FC<Props> = memo(function PetDisplay({ habit, justStampe
                 </h3>
                 <button 
                     onClick={handleCloseInfo}
-                    className="p-2 hover:bg-slate-100 rounded-full text-slate-500"
+                    className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full text-slate-500 dark:text-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
                 >
                     <X size={24} />
                 </button>
@@ -251,16 +251,16 @@ const PetDisplay: React.FC<Props> = memo(function PetDisplay({ habit, justStampe
             <div className="flex-1 flex flex-col items-center justify-start max-w-md mx-auto w-full">
                 {/* Next Goal Highlight */}
                 {daysToNextStage > 0 ? (
-                    <div className="bg-gradient-to-r from-orange-100 to-amber-100 border border-orange-200 rounded-2xl p-4 w-full mb-8 text-center shadow-sm">
-                        <p className="text-slate-600 font-medium mb-1">距離下一階段 <span className="text-orange-600 font-bold">{nextStageName}</span></p>
-                        <p className="text-3xl font-bold text-slate-800">
-                            再堅持 <span className="text-orange-500 text-4xl">{daysToNextStage}</span> 天
+                    <div className="bg-gradient-to-r from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30 border border-orange-200 dark:border-orange-700 rounded-2xl p-4 w-full mb-8 text-center shadow-sm">
+                        <p className="text-slate-600 dark:text-slate-300 font-medium mb-1">距離下一階段 <span className="text-orange-600 dark:text-orange-400 font-bold">{nextStageName}</span></p>
+                        <p className="text-3xl font-bold text-slate-800 dark:text-slate-100">
+                            再堅持 <span className="text-orange-500 dark:text-orange-400 text-4xl">{daysToNextStage}</span> 天
                         </p>
                     </div>
                 ) : (
-                    <div className="bg-gradient-to-r from-yellow-100 to-amber-100 border border-yellow-200 rounded-2xl p-4 w-full mb-8 text-center shadow-sm">
-                        <p className="text-amber-700 font-bold text-lg">🎉 已達到最高階段！</p>
-                        <p className="text-amber-600 text-sm">您可以選擇讓精靈退休以獲得永久加成。</p>
+                    <div className="bg-gradient-to-r from-yellow-100 to-amber-100 dark:from-amber-900/30 dark:to-yellow-900/30 border border-yellow-200 dark:border-amber-700 rounded-2xl p-4 w-full mb-8 text-center shadow-sm">
+                        <p className="text-amber-700 dark:text-amber-300 font-bold text-lg">🎉 已達到最高階段！</p>
+                        <p className="text-amber-600 dark:text-amber-400 text-sm">您可以選擇讓精靈退休以獲得永久加成。</p>
                     </div>
                 )}
 
@@ -270,16 +270,16 @@ const PetDisplay: React.FC<Props> = memo(function PetDisplay({ habit, justStampe
                         <div key={stage.label} className={`relative flex items-center gap-4 p-3 rounded-xl transition-all ${stage.reached ? 'opacity-100' : 'opacity-40 grayscale'}`}>
                             {/* Connector Line */}
                             {index !== timelineStages.length - 1 && (
-                                <div className="absolute left-8 top-12 bottom-[-20px] w-1 bg-slate-200 -z-10"></div>
+                                <div className="absolute left-8 top-12 bottom-[-20px] w-1 bg-slate-200 dark:bg-slate-600 -z-10"></div>
                             )}
 
-                            <div className={`w-16 h-16 rounded-full flex items-center justify-center text-3xl shadow-sm border-4 ${stage.reached ? 'bg-white border-orange-200' : 'bg-slate-100 border-slate-200'}`}>
+                            <div className={`w-16 h-16 rounded-full flex items-center justify-center text-3xl shadow-sm border-4 ${stage.reached ? 'bg-white dark:bg-slate-700 border-orange-200 dark:border-orange-500' : 'bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-600'}`}>
                                 {stage.emoji}
                             </div>
                             
                             <div className="flex-1">
                                 <div className="flex justify-between items-center mb-1">
-                                    <h4 className={`font-bold text-lg ${stage.reached ? 'text-slate-800' : 'text-slate-500'}`}>
+                                    <h4 className={`font-bold text-lg ${stage.reached ? 'text-slate-800 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}`}>
                                         {stage.label}
                                     </h4>
                                     {(() => {
@@ -289,12 +289,12 @@ const PetDisplay: React.FC<Props> = memo(function PetDisplay({ habit, justStampe
                                         const currentThreshold = currentStageMatch ? parseInt(currentStageMatch[0], 10) : 0;
                                         
                                         if (stage.reached && habit.currentLevel < nextThreshold && habit.currentLevel >= currentThreshold) {
-                                            return <span className="px-2 py-0.5 bg-orange-100 text-orange-600 text-xs font-bold rounded-full">CURRENT</span>;
+                                            return <span className="px-2 py-0.5 bg-orange-100 dark:bg-orange-900/50 text-orange-600 dark:text-orange-300 text-xs font-bold rounded-full">CURRENT</span>;
                                         }
                                         return null;
                                     })()}
                                 </div>
-                                <p className="text-sm text-slate-500 font-medium">{stage.range}</p>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">{stage.range}</p>
                             </div>
                         </div>
                     ))}

@@ -251,7 +251,7 @@ const CalendarView: React.FC<Props> = memo(function CalendarView({ habit, onStam
   }) : {};
 
   return (
-    <div className="h-full flex flex-col relative">
+    <div className="flex flex-col relative w-full">
       
       {/* Dynamic Keyframes for Stamp Animation */}
       <style>{`
@@ -278,13 +278,13 @@ const CalendarView: React.FC<Props> = memo(function CalendarView({ habit, onStam
       )}
 
       <div 
-        className={`flex-1 flex flex-col p-6 lg:p-8 relative transition-all duration-300 ${theme.container}`}
+        className={`flex flex-col p-4 md:p-5 lg:p-6 relative transition-all duration-300 ${theme.container}`}
         style={getHandDrawnStyle()}
       >
         {theme.decor}
 
         {/* Calendar Header */}
-        <div className="flex items-center justify-between mb-6 px-2 relative z-10 pt-4">
+        <div className="flex items-center justify-between mb-3 md:mb-4 px-2 relative z-10 pt-2 md:pt-4 flex-shrink-0">
             <button onClick={handlePrevMonth} className="p-2 hover:bg-black/5 rounded-full transition-colors text-inherit opacity-60">
                 <ChevronLeft size={24} />
             </button>
@@ -300,7 +300,7 @@ const CalendarView: React.FC<Props> = memo(function CalendarView({ habit, onStam
         </div>
 
         {/* Weekday Headers */}
-        <div className="grid grid-cols-7 mb-4 relative z-10">
+        <div className="grid grid-cols-7 mb-2 md:mb-3 relative z-10 flex-shrink-0">
             {weekDays.map((day, i) => (
             <div key={day} className={`text-center text-[10px] font-bold tracking-widest ${(i === 0 || i === 6) && style !== 'american' ? 'text-orange-400' : 'text-slate-400'}`}>
                 {day}
@@ -308,8 +308,8 @@ const CalendarView: React.FC<Props> = memo(function CalendarView({ habit, onStam
             ))}
         </div>
 
-        {/* Days Grid */}
-        <div className={`grid grid-cols-7 mb-6 flex-1 content-start relative z-10 ${theme.grid}`}>
+        {/* Days Grid – natural height, no scroll */}
+        <div className={`grid grid-cols-7 mb-3 md:mb-4 content-start relative z-10 ${theme.grid}`}>
             {days.map((dateStr, index) => {
             if (!dateStr) return <div key={`empty-${index}`} className={`aspect-square ${theme.emptyCell}`} />;
 
@@ -382,8 +382,8 @@ const CalendarView: React.FC<Props> = memo(function CalendarView({ habit, onStam
             })}
         </div>
 
-        {/* Action Button */}
-        <div className="mt-auto pt-2 relative z-30">
+        {/* Action Button – below calendar */}
+        <div className="mt-4 pt-2 pb-1 relative z-30 flex-shrink-0">
             <button
             onClick={() => {
                 if(!isTodayStamped) setShowStampModal(true);

@@ -37,10 +37,35 @@
     <style>
       body {
         -webkit-tap-highlight-color: transparent;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
       /* Smooth theme transition */
       html {
         transition: background-color 0.3s ease, color 0.3s ease;
+        scroll-behavior: smooth;
+      }
+      /* Global focus-visible for accessibility (keyboard users) */
+      button:focus-visible,
+      a:focus-visible,
+      input:focus-visible,
+      [tabindex]:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 2px white, 0 0 0 4px #f97316;
+      }
+      .dark button:focus-visible,
+      .dark a:focus-visible,
+      .dark input:focus-visible,
+      .dark [tabindex]:focus-visible {
+        box-shadow: 0 0 0 2px #1e293b, 0 0 0 4px #f97316;
+      }
+      /* Hide scrollbar for horizontal habit switcher / chips while keeping scroll */
+      .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      .scrollbar-hide::-webkit-scrollbar {
+        display: none;
       }
     </style>
     

@@ -74,7 +74,7 @@ const OverallCalendarView: React.FC<Props> = ({ habits, style = 'handdrawn' }) =
   }) : {};
 
   return (
-    <div className="h-full flex flex-col relative">
+    <div className="flex flex-col relative w-full">
 
       {/* Dynamic Keyframes for Stamp Animation (Centered version) */}
       <style>{`
@@ -106,12 +106,12 @@ const OverallCalendarView: React.FC<Props> = ({ habits, style = 'handdrawn' }) =
       )}
 
       <div 
-        className={`flex-1 flex flex-col p-6 lg:p-8 relative transition-colors duration-300 ${getContainerClass()}`}
+        className={`flex flex-col p-4 md:p-5 lg:p-6 relative transition-colors duration-300 ${getContainerClass()}`}
         style={getHandDrawnStyle()}
       >
       
         {/* Header */}
-        <div className="flex items-center justify-between mb-6 px-2 relative z-10 pt-4">
+        <div className="flex items-center justify-between mb-3 md:mb-4 px-2 relative z-10 pt-2 md:pt-4 flex-shrink-0">
             <button onClick={handlePrevMonth} className="p-2 hover:bg-black/5 rounded-full transition-colors opacity-60">
             <ChevronLeft size={24} />
             </button>
@@ -127,7 +127,7 @@ const OverallCalendarView: React.FC<Props> = ({ habits, style = 'handdrawn' }) =
         </div>
 
         {/* Weekday Headers */}
-        <div className="grid grid-cols-7 mb-4">
+        <div className="grid grid-cols-7 mb-2 md:mb-3 flex-shrink-0">
             {weekDays.map((day, i) => (
             <div key={day} className={`text-center text-[10px] font-bold tracking-widest ${i === 0 || i === 6 ? (style === 'cny' ? 'text-red-500' : 'text-indigo-400') : 'text-slate-400'}`}>
                 {day}
@@ -135,8 +135,8 @@ const OverallCalendarView: React.FC<Props> = ({ habits, style = 'handdrawn' }) =
             ))}
         </div>
 
-        {/* Days Grid */}
-        <div className="grid grid-cols-7 gap-y-4 gap-x-2 mb-6 flex-1 content-start">
+        {/* Days Grid – natural height, no scroll */}
+        <div className="grid grid-cols-7 gap-y-4 gap-x-2 mb-3 md:mb-4 content-start">
             {days.map((dateStr, index) => {
             if (!dateStr) return <div key={`empty-${index}`} />;
 
@@ -217,8 +217,8 @@ const OverallCalendarView: React.FC<Props> = ({ habits, style = 'handdrawn' }) =
             })}
         </div>
       
-        {/* Footer Info */}
-        <div className="mt-auto pt-2 text-center flex items-center justify-center gap-2 text-slate-400/60">
+        {/* Footer Info – below calendar */}
+        <div className="mt-4 pt-2 pb-1 text-center flex items-center justify-center gap-2 text-slate-400/60 flex-shrink-0">
             <BookOpen size={14} />
             <span className="text-[10px] font-bold tracking-widest uppercase">My Journal</span>
         </div>

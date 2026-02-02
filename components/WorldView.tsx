@@ -78,13 +78,13 @@ const WorldView: React.FC<Props> = ({
       return (
           <div className="h-full flex flex-col">
               <div className="flex items-center justify-between mb-6">
-                  <button onClick={onBack} className="p-2 bg-white rounded-full text-slate-500 hover:bg-slate-100 shadow-sm">
+                  <button onClick={onBack} className="p-2 bg-white dark:bg-slate-700 rounded-full text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
                       <ChevronLeft size={24} />
                   </button>
-                  <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                      <MapIcon size={24} className="text-indigo-500" /> 世界地圖
+                  <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                      <MapIcon size={24} className="text-indigo-500 dark:text-indigo-400" /> 世界地圖
                   </h2>
-                  <div className="flex items-center gap-2 bg-amber-100 px-3 py-1.5 rounded-full text-amber-700 font-bold border border-amber-200">
+                  <div className="flex items-center gap-2 bg-amber-100 dark:bg-amber-900/40 px-3 py-1.5 rounded-full text-amber-700 dark:text-amber-300 font-bold border border-amber-200 dark:border-amber-700">
                       <Coins size={16} />
                       {gameState.coins}
                   </div>
@@ -102,8 +102,8 @@ const WorldView: React.FC<Props> = ({
                             className={`
                                 relative p-6 rounded-3xl border-4 transition-all duration-500 h-64 flex flex-col justify-between overflow-hidden group
                                 ${isUnlocked 
-                                    ? `bg-white border-slate-100 hover:border-indigo-200 hover:shadow-xl cursor-pointer ${area.backgroundClass}` 
-                                    : 'bg-slate-100 border-slate-200 opacity-80'
+                                    ? `bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-600 hover:border-indigo-200 dark:hover:border-indigo-500 hover:shadow-xl cursor-pointer ${area.backgroundClass}` 
+                                    : 'bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-600 opacity-80'
                                 }
                                 ${isJustUnlocked ? 'ring-4 ring-amber-400 scale-[1.02]' : ''}
                             `}
@@ -123,10 +123,10 @@ const WorldView: React.FC<Props> = ({
 
                               <div className="relative z-10 flex justify-between items-start">
                                   <div>
-                                      <h3 className="text-2xl font-bold text-slate-800 mb-2">{area.name}</h3>
-                                      <p className="text-slate-600 font-medium leading-relaxed max-w-[80%]">{area.description}</p>
+                                      <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">{area.name}</h3>
+                                      <p className="text-slate-600 dark:text-slate-300 font-medium leading-relaxed max-w-[80%]">{area.description}</p>
                                   </div>
-                                  {!isUnlocked && <Lock className="text-slate-400" size={32} />}
+                                  {!isUnlocked && <Lock className="text-slate-400 dark:text-slate-500" size={32} />}
                               </div>
 
                               <div className="relative z-10 flex justify-between items-end mt-4">
@@ -137,7 +137,7 @@ const WorldView: React.FC<Props> = ({
                                           </div>
                                       ))}
                                       {area.placedPets.length === 0 && isUnlocked && (
-                                          <span className="text-xs text-slate-400 font-bold py-2">目前沒有居民</span>
+                                          <span className="text-xs text-slate-400 dark:text-slate-500 font-bold py-2">目前沒有居民</span>
                                       )}
                                   </div>
 
@@ -148,13 +148,13 @@ const WorldView: React.FC<Props> = ({
                                             handleUnlock(area.id);
                                         }}
                                         disabled={gameState.coins < area.unlockCost}
-                                        className="bg-slate-900 text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
+                                        className="bg-slate-900 dark:bg-orange-500 text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-800 dark:hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2"
                                       >
                                           <Coins size={16} className="text-amber-400" />
                                           {area.unlockCost} 解鎖
                                       </button>
                                   ) : (
-                                      <div className="bg-white/80 px-4 py-2 rounded-xl text-slate-600 font-bold text-sm shadow-sm group-hover:bg-indigo-500 group-hover:text-white transition-colors">
+                                      <div className="bg-white/80 dark:bg-slate-700/80 px-4 py-2 rounded-xl text-slate-600 dark:text-slate-200 font-bold text-sm shadow-sm group-hover:bg-indigo-500 group-hover:text-white transition-colors">
                                           進入區域
                                       </div>
                                   )}
@@ -176,20 +176,20 @@ const WorldView: React.FC<Props> = ({
           {/* Header */}
           <div className="flex items-center justify-between mb-4 z-10">
               <div className="flex items-center gap-2">
-                <button onClick={() => setCurrentAreaId(null)} className="p-2 bg-white rounded-full text-slate-500 hover:bg-slate-100 shadow-sm border border-slate-200">
+                <button onClick={() => setCurrentAreaId(null)} className="p-2 bg-white dark:bg-slate-700 rounded-full text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 shadow-sm border border-slate-200 dark:border-slate-600 transition-colors">
                     <ChevronLeft size={20} />
                 </button>
-                <h2 className="text-xl font-bold text-slate-800">{currentArea.name}</h2>
+                <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">{currentArea.name}</h2>
               </div>
               
               <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1 bg-amber-100 px-3 py-1.5 rounded-full text-amber-700 font-bold border border-amber-200 text-sm">
+                  <div className="flex items-center gap-1 bg-amber-100 dark:bg-amber-900/40 px-3 py-1.5 rounded-full text-amber-700 dark:text-amber-300 font-bold border border-amber-200 dark:border-amber-700 text-sm">
                       <Coins size={14} />
                       {gameState.coins}
                   </div>
                   <button 
                     onClick={() => setEditMode(!editMode)}
-                    className={`p-2 rounded-full shadow-sm border transition-colors ${editMode ? 'bg-indigo-500 text-white border-indigo-600' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}
+                    className={`p-2 rounded-full shadow-sm border transition-colors ${editMode ? 'bg-indigo-500 text-white border-indigo-600' : 'bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600'}`}
                     title="編輯模式"
                   >
                       <Move size={20} />
@@ -208,30 +208,30 @@ const WorldView: React.FC<Props> = ({
               
               {/* Bottom Action Bar (Edit Mode Only) */}
               {editMode && (
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-3 bg-white p-2 rounded-2xl shadow-xl border border-slate-100 animate-in slide-in-from-bottom-4">
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-3 bg-white dark:bg-slate-800 p-2 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 animate-in slide-in-from-bottom-4">
                       <button 
                         onClick={() => { setShowInventory(true); setShowShop(false); }}
-                        className="flex flex-col items-center gap-1 px-4 py-2 rounded-xl hover:bg-slate-50 text-slate-600"
+                        className="flex flex-col items-center gap-1 px-4 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-200 transition-colors"
                       >
-                          <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600">
+                          <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-300">
                              <Package size={20} />
                           </div>
                           <span className="text-xs font-bold">擺設家具</span>
                       </button>
                       <button 
                         onClick={() => { setShowInventory(true); setShowShop(true); }}
-                        className="flex flex-col items-center gap-1 px-4 py-2 rounded-xl hover:bg-slate-50 text-slate-600"
+                        className="flex flex-col items-center gap-1 px-4 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-200 transition-colors"
                       >
-                          <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center text-amber-600">
+                          <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/50 rounded-full flex items-center justify-center text-amber-600 dark:text-amber-300">
                              <Store size={20} />
                           </div>
                           <span className="text-xs font-bold">家具商店</span>
                       </button>
                       <button 
                         onClick={() => setShowPetSelector(true)}
-                        className="flex flex-col items-center gap-1 px-4 py-2 rounded-xl hover:bg-slate-50 text-slate-600"
+                        className="flex flex-col items-center gap-1 px-4 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-200 transition-colors"
                       >
-                          <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600">
+                          <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/50 rounded-full flex items-center justify-center text-emerald-600 dark:text-emerald-300">
                              <Users size={20} />
                           </div>
                           <span className="text-xs font-bold">邀請精靈</span>
