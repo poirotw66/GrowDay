@@ -54,6 +54,7 @@ export interface Habit {
   currentStreak: number;
   longestStreak: number;
   generation: number; // How many times has this habit been reborn? Default 1
+  petNickname?: string; // Optional display name for the pet
 }
 
 // --- PHASE 3: DECORATION & WORLD ---

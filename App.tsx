@@ -52,6 +52,9 @@ function App() {
     unlockArea,
     // Phase 4
     retireHabit,
+    updatePetNickname,
+    renameHabit,
+    deleteHabit,
     // Phase 6
     newlyUnlockedAchievements,
     dismissToast,
@@ -485,6 +488,10 @@ function App() {
               updateStampStyle={updateStampStyle}
               setCalendarStyle={setCalendarStyle}
               setSoundEffect={setSoundEffect}
+              updatePetNickname={updatePetNickname}
+              renameHabit={renameHabit}
+              deleteHabit={deleteHabit}
+              onCloseSettings={handleCloseSettings}
               isFirebaseEnabled={isFirebaseEnabled}
               debugDate={debugDate}
               setDebugDate={setDebugDate}

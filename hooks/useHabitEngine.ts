@@ -11,8 +11,14 @@ import { calculateGoalReward, getGoalProgress, getPeriodStart, isGoalCompleted }
 import { useAuth } from '../contexts/AuthContext';
 import { getGameStateForUser, setGameStateForUser } from '../firebase';
 
-const STORAGE_KEY = 'growday_save_v2'; 
+const STORAGE_KEY = 'growday_save_v2';
 const OLD_STORAGE_KEY = 'growday_save_v1';
+const PENDING_SYNC_KEY = 'growday_pending_sync';
+
+function setPendingSync(pending: boolean): void {
+  if (pending) localStorage.setItem(PENDING_SYNC_KEY, '1');
+  else localStorage.removeItem(PENDING_SYNC_KEY);
+}
 
 const INITIAL_STATE: GameState = {
   habits: {},
@@ -102,6 +108,7 @@ export const useHabitEngine = () => {
   const { user, authLoading } = useAuth();
   const gameStateRef = useRef(gameState);
   gameStateRef.current = gameState;
+  const lastManualSyncRef = useRef<number>(0); // Track timestamp of manual syncs (delete, stamp, etc.)
 
   // Queue for displaying achievement toasts
   const [newlyUnlockedAchievements, setNewlyUnlockedAchievements] = useState<AchievementDef[]>([]);
@@ -174,7 +181,9 @@ export const useHabitEngine = () => {
     setIsLoaded(true);
   }, [authLoading, user]);
 
-  // When user is set: load from Firestore or upload local state to Firestore
+  // When user is set: load from Firestore or upload local state to Firestore.
+  // If PENDING_SYNC_KEY is set (user had local changes before refresh, e.g. delete habit),
+  // prefer localStorage and push it to Firestore so we don't overwrite with stale remote.
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
@@ -182,9 +191,31 @@ export const useHabitEngine = () => {
       try {
         const remote = await getGameStateForUser(user.uid);
         if (cancelled) return;
-        if (remote && typeof remote === 'object') {
+        const hasPendingSync = typeof localStorage !== 'undefined' && localStorage.getItem(PENDING_SYNC_KEY);
+        if (remote && typeof remote === 'object' && !hasPendingSync) {
           const updatedState = applyMigration(remote as Record<string, unknown>);
           setGameState(updatedState);
+        } else if (hasPendingSync) {
+          const local = localStorage.getItem(STORAGE_KEY);
+          if (local) {
+            const parsed = JSON.parse(local) as Record<string, unknown>;
+            const updated = applyMigration(parsed);
+            setGameState(updated);
+            if (!cancelled) {
+              setSyncStatus('syncing');
+              await setGameStateForUser(user.uid, updated);
+              if (!cancelled) {
+                setPendingSync(false);
+                setSyncStatus('synced');
+                setTimeout(() => setSyncStatus('idle'), 2000);
+              }
+            }
+          } else {
+            if (remote && typeof remote === 'object') {
+              setGameState(applyMigration(remote as Record<string, unknown>));
+            }
+            setPendingSync(false);
+          }
         } else {
           const local = localStorage.getItem(STORAGE_KEY);
           if (local) {
@@ -210,9 +241,12 @@ export const useHabitEngine = () => {
     return () => { cancelled = true; };
   }, [user]);
 
-  // Reset sync status when user logs out
+  // Reset sync status and pending sync flag when user logs out
   useEffect(() => {
-    if (!user) setSyncStatus('idle');
+    if (!user) {
+      setSyncStatus('idle');
+      setPendingSync(false);
+    }
   }, [user]);
 
   // Save to local storage whenever state changes
@@ -223,12 +257,20 @@ export const useHabitEngine = () => {
   }, [gameState, isLoaded]);
 
   // Debounced save to Firestore when user is logged in; update sync status for UI
+  // Skip if a manual sync (delete, stamp, etc.) happened recently (within 2s) to avoid overwriting
   useEffect(() => {
     if (!user || !isLoaded) return;
     const t = setTimeout(() => {
+      const timeSinceManualSync = Date.now() - lastManualSyncRef.current;
+      if (timeSinceManualSync < 2000) {
+        // Manual sync happened recently, skip debounced save to avoid race condition
+        return;
+      }
       setSyncStatus('syncing');
+      setPendingSync(true);
       setGameStateForUser(user.uid, gameStateRef.current)
         .then(() => {
+          setPendingSync(false);
           setSyncStatus('synced');
           setTimeout(() => setSyncStatus('idle'), 2000);
         })
@@ -304,7 +346,13 @@ export const useHabitEngine = () => {
           isOnboarded: true
         };
         const finalState = processAchievements(nextState);
-        if (user) setGameStateForUser(user.uid, finalState).catch((e) => console.error('Firestore save failed', e));
+        if (user) {
+          setPendingSync(true);
+          lastManualSyncRef.current = Date.now();
+          setGameStateForUser(user.uid, finalState)
+            .then(() => setPendingSync(false))
+            .catch((e) => console.error('Firestore save failed', e));
+        }
         return finalState;
     });
   }, [user]);
@@ -335,6 +383,91 @@ export const useHabitEngine = () => {
       };
     });
   }, []);
+
+  const updatePetNickname = useCallback((habitId: string, petNickname: string) => {
+    setGameState(prev => {
+      if (!prev.habits[habitId]) return prev;
+      return {
+        ...prev,
+        habits: {
+          ...prev.habits,
+          [habitId]: {
+            ...prev.habits[habitId],
+            petNickname: petNickname.trim() || undefined
+          }
+        }
+      };
+    });
+  }, []);
+
+  const renameHabit = useCallback((habitId: string, newName: string) => {
+    const trimmed = newName.trim();
+    if (!trimmed) return;
+    setGameState(prev => {
+      if (!prev.habits[habitId]) return prev;
+      return {
+        ...prev,
+        habits: {
+          ...prev.habits,
+          [habitId]: {
+            ...prev.habits[habitId],
+            name: trimmed
+          }
+        }
+      };
+    });
+  }, []);
+
+  const deleteHabit = useCallback((habitId: string) => {
+    setGameState(prev => {
+      const habitIds = Object.keys(prev.habits);
+      if (habitIds.length <= 1) return prev; // Do not delete the last habit
+      if (!prev.habits[habitId]) return prev;
+
+      const nextHabits = { ...prev.habits };
+      delete nextHabits[habitId];
+
+      let nextActiveId = prev.activeHabitId;
+      if (prev.activeHabitId === habitId) {
+        const remaining = habitIds.filter(id => id !== habitId);
+        nextActiveId = remaining[0] ?? null;
+      }
+
+      const nextGoals = (prev.goals ?? []).filter(g => g.habitId !== habitId);
+
+      const nextState: GameState = {
+        ...prev,
+        habits: nextHabits,
+        activeHabitId: nextActiveId,
+        goals: nextGoals
+      };
+
+      // Persist to localStorage immediately so refresh before effect runs still has correct state
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
+      } catch (_e) {
+        // ignore
+      }
+
+      if (user) {
+        setSyncStatus('syncing');
+        setPendingSync(true);
+        lastManualSyncRef.current = Date.now(); // Mark this as a manual sync
+        setGameStateForUser(user.uid, nextState)
+          .then(() => {
+            setPendingSync(false);
+            setSyncStatus('synced');
+            setTimeout(() => setSyncStatus('idle'), 2000);
+          })
+          .catch((e) => {
+            console.error('Firestore save failed', e);
+            setSyncStatus('error');
+            // Keep pendingSync set so next load will prefer local and re-push
+          });
+      }
+      return nextState;
+    });
+  }, [user]);
 
   const setCalendarStyle = useCallback((style: CalendarStyle) => {
       setGameState(prev => ({
@@ -410,7 +543,13 @@ export const useHabitEngine = () => {
       };
 
       const finalState = processAchievements(nextState);
-      if (user) setGameStateForUser(user.uid, finalState).catch((e) => console.error('Firestore save failed', e));
+      if (user) {
+        setPendingSync(true);
+        lastManualSyncRef.current = Date.now();
+        setGameStateForUser(user.uid, finalState)
+          .then(() => setPendingSync(false))
+          .catch((e) => console.error('Firestore save failed', e));
+      }
       return finalState;
     });
   }, [user]);
@@ -481,7 +620,13 @@ export const useHabitEngine = () => {
       };
 
       const finalState = processAchievements(nextState);
-      if (user) setGameStateForUser(user.uid, finalState).catch((e) => console.error('Firestore save failed', e));
+      if (user) {
+        setPendingSync(true);
+        lastManualSyncRef.current = Date.now();
+        setGameStateForUser(user.uid, finalState)
+          .then(() => setPendingSync(false))
+          .catch((e) => console.error('Firestore save failed', e));
+      }
       return finalState;
     });
   }, [user]);
@@ -850,6 +995,9 @@ export const useHabitEngine = () => {
     unlockArea,
     // Phase 4
     retireHabit,
+    updatePetNickname,
+    renameHabit,
+    deleteHabit,
     // Phase 6
     newlyUnlockedAchievements,
     dismissToast,

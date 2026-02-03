@@ -89,6 +89,9 @@ const PetDisplay: React.FC<Props> = memo(function PetDisplay({ habit, justStampe
                   <div>
                       <h2 className="text-lg font-bold text-slate-700 flex items-center gap-2">
                           {habit.name}
+                          {habit.petNickname && (
+                            <span className="text-sm font-medium text-slate-600 opacity-90">· {habit.petNickname}</span>
+                          )}
                           {habit.generation && habit.generation > 1 && (
                              <span className="text-[10px] bg-white/60 px-2 py-0.5 rounded-full text-slate-500">Gen {habit.generation}</span>
                           )}
@@ -177,7 +180,9 @@ const PetDisplay: React.FC<Props> = memo(function PetDisplay({ habit, justStampe
                 <Info size={16} />
             </button>
         </div>
-        
+        {habit.petNickname && (
+          <p className="text-slate-600 text-base font-medium opacity-80 mb-2">「{habit.petNickname}」</p>
+        )}
         <p className="text-slate-600 text-lg font-medium opacity-80 leading-relaxed">
             {shouldBounce ? "太棒了！你的世界正在成長！" : config.description}
         </p>

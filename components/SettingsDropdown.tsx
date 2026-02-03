@@ -5,7 +5,7 @@ import { SOUND_OPTIONS, playStampSound } from '../utils/audio';
 import { 
   RefreshCw, FlaskConical, Check, CalendarRange, 
   Stamp, Lock, Medal, Palette, ChevronRight, Volume2, 
-  Download, Upload 
+  Download, Upload, User, Pencil, Trash2 
 } from 'lucide-react';
 
 interface SettingsDropdownProps {
@@ -20,6 +20,10 @@ interface SettingsDropdownProps {
   updateStampStyle: (icon: string, color: string) => void;
   setCalendarStyle: (style: CalendarStyle) => void;
   setSoundEffect: (soundId: string) => void;
+  updatePetNickname: (habitId: string, petNickname: string) => void;
+  renameHabit: (habitId: string, newName: string) => void;
+  deleteHabit: (habitId: string) => void;
+  onCloseSettings: () => void;
   isFirebaseEnabled?: boolean;
   // Debug props
   debugDate: string;
@@ -52,6 +56,10 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
   updateStampStyle,
   setCalendarStyle,
   setSoundEffect,
+  updatePetNickname,
+  renameHabit,
+  deleteHabit,
+  onCloseSettings,
   isFirebaseEnabled = false,
   debugDate,
   setDebugDate,
@@ -65,6 +73,36 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
   const [showIconSelector, setShowIconSelector] = useState(false);
   const [showStyleSelector, setShowStyleSelector] = useState(false);
   const [showSoundSelector, setShowSoundSelector] = useState(false);
+  const [habitNameEdit, setHabitNameEdit] = useState(activeHabit.name);
+  const [petNicknameEdit, setPetNicknameEdit] = useState(activeHabit.petNickname ?? '');
+
+  // Keep local edits in sync when activeHabit or dropdown opens
+  React.useEffect(() => {
+    if (isOpen) {
+      setHabitNameEdit(activeHabit.name);
+      setPetNicknameEdit(activeHabit.petNickname ?? '');
+    }
+  }, [isOpen, activeHabit.name, activeHabit.petNickname]);
+
+  const handleSaveHabitName = () => {
+    const trimmed = habitNameEdit.trim();
+    if (trimmed && trimmed !== activeHabit.name) renameHabit(activeHabit.id, trimmed);
+  };
+
+  const handleSavePetNickname = () => {
+    const val = petNicknameEdit.trim();
+    if (val !== (activeHabit.petNickname ?? '')) updatePetNickname(activeHabit.id, val);
+  };
+
+  const handleDeleteHabit = () => {
+    const habitCount = Object.keys(gameState.habits).length;
+    if (habitCount <= 1) return;
+    const msg = `確定要刪除「${activeHabit.name}」與其所有打卡紀錄嗎？此操作無法復原。`;
+    if (window.confirm(msg)) {
+      deleteHabit(activeHabit.id);
+      onCloseSettings();
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -101,6 +139,75 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
       {/* Settings Section */}
       <div className="px-4 py-2 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1 mt-2">
         設定
+      </div>
+
+      {/* Current habit / pet settings */}
+      <div className="px-2 mb-2">
+        <div className="px-2 py-1 text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">
+          當前習慣／精靈設定
+        </div>
+        <div className="space-y-2 bg-slate-50 dark:bg-slate-700/50 rounded-xl p-3 border border-slate-100 dark:border-slate-600">
+          <div>
+            <label className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-1">
+              <Pencil size={12} />
+              習慣名稱
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={habitNameEdit}
+                onChange={(e) => setHabitNameEdit(e.target.value)}
+                onBlur={handleSaveHabitName}
+                onKeyDown={(e) => e.key === 'Enter' && handleSaveHabitName()}
+                className="flex-1 px-3 py-2 rounded-lg text-sm bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-800 dark:text-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+                placeholder="習慣名稱"
+              />
+              <button
+                type="button"
+                onClick={handleSaveHabitName}
+                className="px-3 py-2 rounded-lg bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-medium hover:bg-slate-300 dark:hover:bg-slate-500"
+              >
+                儲存
+              </button>
+            </div>
+          </div>
+          <div>
+            <label className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-1">
+              <User size={12} />
+              精靈暱稱（選填，顯示在精靈卡片上）
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={petNicknameEdit}
+                onChange={(e) => setPetNicknameEdit(e.target.value)}
+                onBlur={handleSavePetNickname}
+                onKeyDown={(e) => e.key === 'Enter' && handleSavePetNickname()}
+                className="flex-1 px-3 py-2 rounded-lg text-sm bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-800 dark:text-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+                placeholder="精靈暱稱"
+              />
+              <button
+                type="button"
+                onClick={handleSavePetNickname}
+                className="px-3 py-2 rounded-lg bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-medium hover:bg-slate-300 dark:hover:bg-slate-500"
+              >
+                儲存
+              </button>
+            </div>
+          </div>
+          {Object.keys(gameState.habits).length > 1 && (
+            <div className="pt-2 border-t border-slate-200 dark:border-slate-600">
+              <button
+                type="button"
+                onClick={handleDeleteHabit}
+                className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 font-medium"
+              >
+                <Trash2 size={14} />
+                刪除此習慣
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Sound Settings */}
