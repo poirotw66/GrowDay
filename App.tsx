@@ -2,6 +2,7 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { useHabitEngine } from './hooks/useHabitEngine';
 import { useTheme } from './contexts/ThemeContext';
+import { useAuth } from './contexts/AuthContext';
 import PetDisplay from './components/PetDisplay';
 import CalendarView from './components/CalendarView';
 import OverallCalendarView from './components/OverallCalendarView';
@@ -19,15 +20,17 @@ import ThemeToggle from './components/ThemeToggle';
 import ReminderSettingsComponent from './components/ReminderSettings';
 import GoalSettings from './components/GoalSettings';
 import ShareCard from './components/ShareCard';
-import { Sprout, Map as MapIcon, Calendar as CalendarIcon, LayoutGrid, Trophy, Settings, BarChart3, Bell, Target, Share2, MoreHorizontal } from 'lucide-react';
+import EntryChoice, { getGuestChoiceStored } from './components/EntryChoice';
+import { Sprout, Map as MapIcon, Calendar as CalendarIcon, LayoutGrid, Trophy, Settings, BarChart3, Bell, Target, Share2, MoreHorizontal, LogIn, LogOut } from 'lucide-react';
 import { playStampSound } from './utils/audio';
 import { startReminderChecker, stopReminderChecker, sendDailyReminder, getReminderSettings } from './utils/notifications';
 
 function App() {
-  const { 
-    gameState, 
+  const { user, authLoading, signInWithGoogle, signOut, isFirebaseEnabled } = useAuth();
+  const {
+    gameState,
     activeHabit,
-    isLoaded, 
+    isLoaded,
     addHabit, 
     switchHabit,
     updateStampStyle,
@@ -68,7 +71,8 @@ function App() {
   const [showGoals, setShowGoals] = useState(false);
   const [showShareCard, setShowShareCard] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
-  
+  const [choseGuest, setChoseGuest] = useState(false);
+
   // Theme hook
   const { resolvedTheme } = useTheme();
   
@@ -200,6 +204,16 @@ function App() {
 
   // Early returns AFTER all hooks
   if (!isLoaded) return <div className="h-screen w-full bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-400 dark:text-slate-500 font-medium">載入中...</div>;
+
+  // Entry choice: Google login or continue as guest (only when Firebase enabled and user not signed in)
+  if (isFirebaseEnabled && !user && !choseGuest && !getGuestChoiceStored()) {
+    return (
+      <EntryChoice
+        onSignIn={signInWithGoogle}
+        onContinueAsGuest={() => setChoseGuest(true)}
+      />
+    );
+  }
 
   // Initial Onboarding (if no habits exist)
   if (!gameState.isOnboarded) {
@@ -344,6 +358,18 @@ function App() {
             </div>
 
             <div className="flex items-center gap-2 relative z-40 flex-wrap justify-end">
+                {/* Auth: Google sign-in / sign-out */}
+                {isFirebaseEnabled && (
+                  user ? (
+                    <div className="flex items-center gap-2">
+                      {user.photoURL && <img src={user.photoURL} alt="" className="w-8 h-8 rounded-full border-2 border-slate-200 dark:border-slate-600" />}
+                      <span className="hidden sm:inline text-sm font-medium text-slate-600 dark:text-slate-300 truncate max-w-[120px]" title={user.email ?? undefined}>{user.email ?? user.displayName ?? ''}</span>
+                      <button onClick={() => signOut()} className="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" title="登出"><LogOut size={18} /></button>
+                    </div>
+                  ) : (
+                    <button onClick={() => signInWithGoogle()} className="flex items-center gap-2 px-3 py-2 rounded-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors text-sm font-medium" title="使用 Google 登入"><LogIn size={18} /> Google 登入</button>
+                  )
+                )}
                 {/* Theme Toggle */}
                 <ThemeToggle />
 

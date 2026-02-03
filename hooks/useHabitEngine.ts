@@ -1,5 +1,4 @@
-
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { GameState, DayLog, Habit, PetColor, PlacedItem, PlacedPet, PetStage, RetiredPet, CalendarStyle, Goal, GoalPeriod, CompletedGoal } from '../types';
 import { calculateLevel, calculateStreak, STAGE_THRESHOLDS } from '../utils/gameLogic';
 import { getTodayString } from '../utils/dateUtils';
@@ -9,6 +8,8 @@ import { INITIAL_AREAS, DECORATION_ITEMS } from '../utils/worldData';
 import { playUnlockSound } from '../utils/audio';
 import { ACHIEVEMENTS, AchievementDef } from '../utils/achievementData';
 import { calculateGoalReward, getGoalProgress, getPeriodStart, isGoalCompleted } from '../utils/goalLogic';
+import { useAuth } from '../contexts/AuthContext';
+import { getGameStateForUser, setGameStateForUser } from '../firebase';
 
 const STORAGE_KEY = 'growday_save_v2'; 
 const OLD_STORAGE_KEY = 'growday_save_v1';
@@ -67,61 +68,54 @@ const checkUnlockableIcons = (habit: Habit, currentUnlocked: string[], monthlyCo
   return newUnlocked;
 };
 
+// Apply migration and recalc to parsed state (shared by localStorage and Firestore)
+function applyMigration(parsed: Record<string, unknown>): GameState {
+  const today = getTodayString();
+  const updatedHabits = { ...(parsed.habits as Record<string, Habit>) };
+  let loadedUnlockedIcons = (parsed.unlockedIcons as string[]) || getDefaultUnlockedIcons();
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+  Object.keys(updatedHabits).forEach((key) => {
+    const habit = updatedHabits[key];
+    habit.currentStreak = calculateStreak(habit.logs, today);
+    if (!habit.stampColor) habit.stampColor = DEFAULT_STAMP_COLOR;
+    if (typeof habit.generation !== 'number') habit.generation = 1;
+    const monthlyCount = getHabitMonthlyCount(habit, currentYear, currentMonth);
+    loadedUnlockedIcons = checkUnlockableIcons(habit, loadedUnlockedIcons, monthlyCount);
+  });
+  return {
+    ...INITIAL_STATE,
+    ...parsed,
+    habits: updatedHabits,
+    unlockedIcons: loadedUnlockedIcons,
+    world: (parsed.world as GameState['world']) ? { ...INITIAL_STATE.world, ...(parsed.world as object) } : INITIAL_STATE.world,
+    retiredPets: (parsed.retiredPets as RetiredPet[]) || [],
+    calendarStyle: (parsed.calendarStyle as CalendarStyle) || 'handdrawn',
+    selectedSound: (parsed.selectedSound as string) || 'thud',
+    unlockedAchievements: (parsed.unlockedAchievements as string[]) || [],
+  } as GameState;
+}
+
 export const useHabitEngine = () => {
   const [gameState, setGameState] = useState<GameState>(INITIAL_STATE);
   const [isLoaded, setIsLoaded] = useState(false);
-  
+  const { user, authLoading } = useAuth();
+  const gameStateRef = useRef(gameState);
+  gameStateRef.current = gameState;
+
   // Queue for displaying achievement toasts
   const [newlyUnlockedAchievements, setNewlyUnlockedAchievements] = useState<AchievementDef[]>([]);
 
-  // Load from local storage on mount
+  // Load from local storage on mount (when not waiting for auth or when no user)
   useEffect(() => {
+    if (authLoading) return;
+    if (user) return; // When user is set, load from Firestore in the next effect instead
     // 1. Try loading V2
     const savedV2 = localStorage.getItem(STORAGE_KEY);
     if (savedV2) {
       try {
-        const parsed = JSON.parse(savedV2);
-        
-        // Recalculate streaks for all habits
-        const today = getTodayString();
-        const updatedHabits = { ...parsed.habits };
-        let loadedUnlockedIcons = parsed.unlockedIcons || getDefaultUnlockedIcons();
-        
-        const currentMonth = new Date().getMonth();
-        const currentYear = new Date().getFullYear();
-
-        Object.keys(updatedHabits).forEach(key => {
-          const habit = updatedHabits[key];
-          habit.currentStreak = calculateStreak(habit.logs, today);
-          
-          // Ensure stampColor exists (Migration)
-          if (!habit.stampColor) {
-              habit.stampColor = DEFAULT_STAMP_COLOR;
-          }
-          // Ensure generation exists (Migration)
-          if (typeof habit.generation !== 'number') {
-              habit.generation = 1;
-          }
-
-          // Check for retroactive unlocks based on recalculated streaks
-          const monthlyCount = getHabitMonthlyCount(habit, currentYear, currentMonth);
-          loadedUnlockedIcons = checkUnlockableIcons(habit, loadedUnlockedIcons, monthlyCount);
-        });
-
-        // Ensure new fields exist for existing users (Phase 3 & 4 & 5 & 6)
-        const updatedState = {
-           ...INITIAL_STATE, // Start with defaults
-           ...parsed,        // Overwrite with saved data
-           habits: updatedHabits,
-           unlockedIcons: loadedUnlockedIcons,
-           world: parsed.world ? { ...INITIAL_STATE.world, ...parsed.world } : INITIAL_STATE.world,
-           retiredPets: parsed.retiredPets || [],
-           calendarStyle: parsed.calendarStyle || 'handdrawn',
-           selectedSound: parsed.selectedSound || 'thud',
-           unlockedAchievements: parsed.unlockedAchievements || []
-        };
-
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- Necessary for initial load from localStorage
+        const parsed = JSON.parse(savedV2) as Record<string, unknown>;
+        const updatedState = applyMigration(parsed);
         setGameState(updatedState);
         setIsLoaded(true);
         return;
@@ -176,7 +170,35 @@ export const useHabitEngine = () => {
     }
     
     setIsLoaded(true);
-  }, []);
+  }, [authLoading, user]);
+
+  // When user is set: load from Firestore or upload local state to Firestore
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const remote = await getGameStateForUser(user.uid);
+        if (cancelled) return;
+        if (remote && typeof remote === 'object') {
+          const updatedState = applyMigration(remote as Record<string, unknown>);
+          setGameState(updatedState);
+        } else {
+          const local = localStorage.getItem(STORAGE_KEY);
+          if (local) {
+            const parsed = JSON.parse(local) as Record<string, unknown>;
+            const updated = applyMigration(parsed);
+            setGameState(updated);
+            if (!cancelled) await setGameStateForUser(user.uid, updated);
+          }
+        }
+      } catch (e) {
+        console.error("Firestore load/save failed", e);
+      }
+      if (!cancelled) setIsLoaded(true);
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
 
   // Save to local storage whenever state changes
   useEffect(() => {
@@ -184,6 +206,15 @@ export const useHabitEngine = () => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
     }
   }, [gameState, isLoaded]);
+
+  // Debounced save to Firestore when user is logged in
+  useEffect(() => {
+    if (!user || !isLoaded) return;
+    const t = setTimeout(() => {
+      setGameStateForUser(user.uid, gameStateRef.current).catch((e) => console.error("Firestore save failed", e));
+    }, 1500);
+    return () => clearTimeout(t);
+  }, [gameState, isLoaded, user]);
 
   // --- Logic: Process Achievements ---
   const processAchievements = (currentState: GameState): GameState => {
@@ -248,9 +279,11 @@ export const useHabitEngine = () => {
           unlockedPets: Array.from(new Set([...prev.unlockedPets, assignedPet])),
           isOnboarded: true
         };
-        return processAchievements(nextState);
+        const finalState = processAchievements(nextState);
+        if (user) setGameStateForUser(user.uid, finalState).catch((e) => console.error('Firestore save failed', e));
+        return finalState;
     });
-  }, []);
+  }, [user]);
 
   const switchHabit = useCallback((habitId: string) => {
     setGameState(prev => {
@@ -352,9 +385,11 @@ export const useHabitEngine = () => {
         coins: prev.coins + earnedCoins
       };
 
-      return processAchievements(nextState);
+      const finalState = processAchievements(nextState);
+      if (user) setGameStateForUser(user.uid, finalState).catch((e) => console.error('Firestore save failed', e));
+      return finalState;
     });
-  }, []);
+  }, [user]);
 
   // --- Phase 4: Legacy / Retirement ---
 
@@ -420,10 +455,12 @@ export const useHabitEngine = () => {
         coins: prev.coins - item.price,
         inventory: [...prev.inventory, itemId]
       };
-      
-      return processAchievements(nextState);
+
+      const finalState = processAchievements(nextState);
+      if (user) setGameStateForUser(user.uid, finalState).catch((e) => console.error('Firestore save failed', e));
+      return finalState;
     });
-  }, []);
+  }, [user]);
 
   const placeDecoration = useCallback((areaId: string, itemId: string) => {
     setGameState(prev => {

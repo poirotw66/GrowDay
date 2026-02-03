@@ -191,6 +191,12 @@ When your pet reaches Lv.30, you can choose to retire:
 
 ---
 
+## 💡 What Features Could Be Added?
+
+We maintain a [Feature Ideas list](./docs/FEATURE_IDEAS.md) covering gamification, analytics, reminders, world decorations, personalization, i18n, accessibility, and more—with difficulty and suggested priority. Feel free to check it out or contribute ideas.
+
+---
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit an Issue or Pull Request.

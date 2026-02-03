@@ -191,6 +191,12 @@ GrowDay 支援 Progressive Web App (PWA)，可以：
 
 ---
 
+## 💡 還能新增什麼功能？
+
+我們整理了 [功能建議清單](./docs/FEATURE_IDEAS.md)，包含遊戲化、統計、提醒、世界裝飾、個人化、多語系、無障礙等方向，並標註難度與建議優先順序，歡迎參考或貢獻點子。
+
+---
+
 ## 🤝 貢獻
 
 歡迎提交 Issue 或 Pull Request！
