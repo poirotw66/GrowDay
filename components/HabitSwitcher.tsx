@@ -22,11 +22,13 @@ const HabitSwitcher: React.FC<Props> = memo(function HabitSwitcher({ gameState, 
              <button
                key={habit.id}
                onClick={() => onSwitch(habit.id)}
+               aria-label={`切換至習慣：${habit.name}`}
+               aria-pressed={isActive}
                className={`
-                  flex items-center gap-2 px-4 py-2 rounded-full border transition-all whitespace-nowrap
-                  focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900
+                  flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-200 whitespace-nowrap cursor-pointer
+                  focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900
                   ${isActive 
-                     ? `border-slate-800 dark:border-orange-500 bg-slate-800 dark:bg-orange-500 text-white shadow-lg scale-105` 
+                     ? `border-primary dark:border-cta bg-primary dark:bg-cta text-white shadow-lg` 
                      : `border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600`
                   }
                `}
@@ -41,7 +43,8 @@ const HabitSwitcher: React.FC<Props> = memo(function HabitSwitcher({ gameState, 
        {/* Add New Button */}
        <button
           onClick={onAdd}
-          className="flex items-center gap-1 px-3 py-2 rounded-full border border-dashed border-slate-300 dark:border-slate-500 text-slate-500 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 transition-all whitespace-nowrap text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+          aria-label="新增習慣"
+          className="flex items-center gap-1 px-3 py-2 rounded-full border border-dashed border-slate-300 dark:border-slate-500 text-slate-500 dark:text-slate-400 hover:border-primary dark:hover:border-primary-light hover:text-primary dark:hover:text-primary-light hover:bg-primary/5 dark:hover:bg-primary/10 transition-all duration-200 whitespace-nowrap text-sm font-medium cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
        >
           <Plus size={14} /> 新增
        </button>
@@ -51,7 +54,8 @@ const HabitSwitcher: React.FC<Props> = memo(function HabitSwitcher({ gameState, 
         {/* Compendium Button */}
        <button
           onClick={onOpenCompendium}
-          className="flex items-center gap-2 px-3 py-2 rounded-full bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-all whitespace-nowrap text-sm font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+          aria-label="圖鑑"
+          className="flex items-center gap-2 px-3 py-2 rounded-full bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-all duration-200 whitespace-nowrap text-sm font-bold cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
        >
           <Book size={14} /> 圖鑑
        </button>

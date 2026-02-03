@@ -127,8 +127,9 @@ const PetDisplay: React.FC<Props> = memo(function PetDisplay({ habit, justStampe
       {/* Collapse Button (Top Left - Replaces Info, Info moved next to name) */}
       <button 
         onClick={handleCollapse}
-        className="absolute top-8 left-8 p-2 bg-white/50 hover:bg-white/80 rounded-full text-slate-600 transition-colors z-20"
+        className="absolute top-8 left-8 p-2 bg-white/50 hover:bg-white/80 rounded-full text-slate-600 transition-colors duration-200 z-20 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         title="收起"
+        aria-label="收起精靈卡片"
       >
         <ChevronUp size={24} />
       </button>
@@ -174,8 +175,9 @@ const PetDisplay: React.FC<Props> = memo(function PetDisplay({ habit, justStampe
             </h2>
             <button 
                 onClick={handleShowInfo}
-                className="p-1.5 bg-white/40 hover:bg-white/60 rounded-full text-slate-600 transition-colors"
+                className="p-1.5 bg-white/40 hover:bg-white/60 rounded-full text-slate-600 transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                 title="成長指南"
+                aria-label="成長指南"
             >
                 <Info size={16} />
             </button>
@@ -193,7 +195,8 @@ const PetDisplay: React.FC<Props> = memo(function PetDisplay({ habit, justStampe
          {isMaxLevel ? (
              <button 
                 onClick={handleShowRetireConfirm}
-                className="w-full py-4 bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold text-lg flex items-center justify-center gap-2 hover:brightness-110 transition-all shadow-inner animate-pulse"
+                className="w-full py-4 bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold text-lg flex items-center justify-center gap-2 hover:brightness-110 transition-all duration-200 shadow-inner animate-pulse cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2"
+                aria-label="進入榮譽殿堂（傳承）"
              >
                  <Medal size={20} />
                  進入榮譽殿堂 (傳承)
@@ -223,14 +226,16 @@ const PetDisplay: React.FC<Props> = memo(function PetDisplay({ habit, justStampe
              <div className="flex flex-col gap-3 w-full max-w-xs">
                  <button 
                     onClick={handleRetire}
-                    className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl hover:scale-105 transition-transform"
+                    className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl hover:scale-105 transition-transform duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                    aria-label="確認傳承"
                  >
                      <Sparkles size={18} className="text-amber-400" />
                      確認傳承
                  </button>
                  <button 
                     onClick={handleCloseRetireConfirm}
-                    className="w-full py-3 text-slate-400 dark:text-slate-500 font-bold hover:text-slate-600 dark:hover:text-slate-300"
+                    className="w-full py-3 text-slate-400 dark:text-slate-500 font-bold hover:text-slate-600 dark:hover:text-slate-300 transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+                    aria-label="稍後再說"
                  >
                      稍後再說
                  </button>
@@ -247,7 +252,8 @@ const PetDisplay: React.FC<Props> = memo(function PetDisplay({ habit, justStampe
                 </h3>
                 <button 
                     onClick={handleCloseInfo}
-                    className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full text-slate-500 dark:text-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
+                    className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full text-slate-500 dark:text-slate-400 transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
+                    aria-label="關閉成長指南"
                 >
                     <X size={24} />
                 </button>

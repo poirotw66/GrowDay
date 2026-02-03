@@ -116,14 +116,16 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
       <div className="flex gap-2 px-2 mb-2">
         <button
           onClick={onExportData}
-          className="flex-1 flex flex-col items-center justify-center gap-1 bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 p-3 rounded-xl transition-colors text-slate-600 dark:text-slate-300 text-xs font-bold"
+          className="flex-1 flex flex-col items-center justify-center gap-1 bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 p-3 rounded-xl transition-colors duration-200 text-slate-600 dark:text-slate-300 text-xs font-bold cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+          aria-label="匯出備份"
         >
           <Download size={18} />
           匯出備份
         </button>
         <button
           onClick={onImportClick}
-          className="flex-1 flex flex-col items-center justify-center gap-1 bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 p-3 rounded-xl transition-colors text-slate-600 dark:text-slate-300 text-xs font-bold"
+          className="flex-1 flex flex-col items-center justify-center gap-1 bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 p-3 rounded-xl transition-colors duration-200 text-slate-600 dark:text-slate-300 text-xs font-bold cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+          aria-label="匯入備份"
         >
           <Upload size={18} />
           匯入備份
@@ -165,7 +167,8 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
               <button
                 type="button"
                 onClick={handleSaveHabitName}
-                className="px-3 py-2 rounded-lg bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-medium hover:bg-slate-300 dark:hover:bg-slate-500"
+                className="px-3 py-2 rounded-lg bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-medium hover:bg-slate-300 dark:hover:bg-slate-500 transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+                aria-label="儲存習慣名稱"
               >
                 儲存
               </button>
@@ -189,7 +192,8 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
               <button
                 type="button"
                 onClick={handleSavePetNickname}
-                className="px-3 py-2 rounded-lg bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-medium hover:bg-slate-300 dark:hover:bg-slate-500"
+                className="px-3 py-2 rounded-lg bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-medium hover:bg-slate-300 dark:hover:bg-slate-500 transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+                aria-label="儲存精靈暱稱"
               >
                 儲存
               </button>
@@ -200,7 +204,8 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
               <button
                 type="button"
                 onClick={handleDeleteHabit}
-                className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 font-medium"
+                className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 font-medium transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-inset"
+                aria-label="刪除此習慣"
               >
                 <Trash2 size={14} />
                 刪除此習慣
@@ -213,7 +218,9 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
       {/* Sound Settings */}
       <button
         onClick={() => setShowSoundSelector(!showSoundSelector)}
-        className="w-full flex items-center justify-between px-4 py-3 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-colors font-medium mb-1"
+        className="w-full flex items-center justify-between px-4 py-3 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-colors duration-200 font-medium mb-1 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+        aria-label="打卡音效"
+        aria-expanded={showSoundSelector}
       >
         <div className="flex items-center gap-3">
           <Volume2 size={16} />
@@ -221,7 +228,7 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
         </div>
         <ChevronRight
           size={16}
-          className={`transition-transform ${showSoundSelector ? 'rotate-90' : ''}`}
+          className={`transition-transform duration-200 ${showSoundSelector ? 'rotate-90' : ''}`}
         />
       </button>
 
@@ -234,11 +241,13 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
                 setSoundEffect(sound.id);
                 playStampSound(sound.id);
               }}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm font-bold flex justify-between items-center ${
+              className={`w-full text-left px-3 py-2 rounded-lg text-sm font-bold flex justify-between items-center transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset ${
                 gameState.selectedSound === sound.id
                   ? 'bg-white dark:bg-slate-600 text-indigo-500 dark:text-indigo-400 shadow-sm border border-indigo-100 dark:border-indigo-700'
                   : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600'
               }`}
+              aria-label={sound.label}
+              aria-pressed={gameState.selectedSound === sound.id}
             >
               {sound.label}
               {gameState.selectedSound === sound.id && <Check size={14} />}
@@ -250,7 +259,9 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
       {/* Calendar Style Selector */}
       <button
         onClick={() => setShowStyleSelector(!showStyleSelector)}
-        className="w-full flex items-center justify-between px-4 py-3 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-colors font-medium"
+        className="w-full flex items-center justify-between px-4 py-3 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-colors duration-200 font-medium cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+        aria-label="日曆外觀風格"
+        aria-expanded={showStyleSelector}
       >
         <div className="flex items-center gap-3">
           <Palette size={16} />
@@ -258,7 +269,7 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
         </div>
         <ChevronRight
           size={16}
-          className={`transition-transform ${showStyleSelector ? 'rotate-90' : ''}`}
+          className={`transition-transform duration-200 ${showStyleSelector ? 'rotate-90' : ''}`}
         />
       </button>
 
@@ -268,11 +279,13 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
             <button
               key={style.id}
               onClick={() => setCalendarStyle(style.id)}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm font-bold flex justify-between items-center ${
+              className={`w-full text-left px-3 py-2 rounded-lg text-sm font-bold flex justify-between items-center transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset ${
                 gameState.calendarStyle === style.id
                   ? 'bg-white dark:bg-slate-600 text-orange-500 dark:text-orange-400 shadow-sm border border-orange-100 dark:border-orange-700'
                   : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600'
               }`}
+              aria-label={style.label}
+              aria-pressed={gameState.calendarStyle === style.id}
             >
               {style.label}
               {gameState.calendarStyle === style.id && <Check size={14} />}
@@ -284,7 +297,8 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
       {/* Hall of Fame */}
       <button
         onClick={onShowHallOfFame}
-        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-xl transition-colors font-medium mb-1"
+        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-xl transition-colors duration-200 font-medium mb-1 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-inset"
+        aria-label="榮譽殿堂"
       >
         <Medal size={16} />
         榮譽殿堂 (退休紀錄)
@@ -293,7 +307,9 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
       {/* Change Icon Toggle */}
       <button
         onClick={() => setShowIconSelector(!showIconSelector)}
-        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-colors font-medium"
+        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-colors duration-200 font-medium cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+        aria-label="更換打卡樣式"
+        aria-expanded={showIconSelector}
       >
         <Stamp size={16} />
         更換打卡樣式
@@ -317,7 +333,7 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
                     isUnlocked && updateStampStyle(option.id, activeHabit.stampColor)
                   }
                   className={`
-                    relative aspect-square flex items-center justify-center rounded-lg transition-all group
+                    relative aspect-square flex items-center justify-center rounded-lg transition-all duration-200 group cursor-pointer
                     ${
                       isSelected
                         ? 'bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-800 shadow-md'
@@ -327,6 +343,8 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
                     }
                   `}
                   title={isUnlocked ? option.label : option.unlockHint}
+                  aria-label={isUnlocked ? option.label : option.unlockHint}
+                  aria-pressed={isSelected}
                 >
                   <Icon size={18} fill={isSelected ? 'currentColor' : 'none'} />
 
@@ -349,12 +367,14 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
                 <button
                   key={color.id}
                   onClick={() => updateStampStyle(activeHabit.stampIcon, color.hex)}
-                  className={`w-6 h-6 rounded-full transition-transform ${
+                  className={`w-6 h-6 rounded-full transition-transform duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 ${
                     isSelected
                       ? 'scale-125 ring-2 ring-slate-300 dark:ring-slate-500 ring-offset-1 dark:ring-offset-slate-700'
                       : 'hover:scale-110'
                   }`}
                   style={{ backgroundColor: color.hex }}
+                  aria-label={color.id}
+                  aria-pressed={isSelected}
                 >
                   {isSelected && <Check size={10} className="text-white mx-auto" />}
                 </button>
@@ -367,7 +387,8 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
       {/* Reset Button */}
       <button
         onClick={onResetProgress}
-        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition-colors font-medium mb-1"
+        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition-colors duration-200 font-medium mb-1 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-inset"
+        aria-label="重置所有資料"
       >
         <RefreshCw size={16} />
         重置所有資料
@@ -393,7 +414,8 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
             />
             <button
               type="submit"
-              className="bg-amber-100 dark:bg-amber-900/50 hover:bg-amber-200 dark:hover:bg-amber-900/70 text-amber-600 dark:text-amber-400 p-2 rounded-lg transition-colors"
+              className="bg-amber-100 dark:bg-amber-900/50 hover:bg-amber-200 dark:hover:bg-amber-900/70 text-amber-600 dark:text-amber-400 p-2 rounded-lg transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-inset"
+              aria-label="單日補簽"
             >
               <Check size={14} />
             </button>
@@ -429,7 +451,8 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
             </div>
             <button
               type="submit"
-              className="w-full mt-1 bg-amber-100 dark:bg-amber-900/50 hover:bg-amber-200 dark:hover:bg-amber-900/70 text-amber-600 dark:text-amber-400 p-2 rounded-lg transition-colors text-xs font-bold"
+              className="w-full mt-1 bg-amber-100 dark:bg-amber-900/50 hover:bg-amber-200 dark:hover:bg-amber-900/70 text-amber-600 dark:text-amber-400 p-2 rounded-lg transition-colors duration-200 text-xs font-bold cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-inset"
+              aria-label="執行區間打卡"
             >
               執行區間打卡
             </button>
