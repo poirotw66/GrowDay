@@ -14,6 +14,8 @@ type AuthContextType = {
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   isFirebaseEnabled: boolean;
+  signInLoading: boolean;
+  signInError: string | null;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,6 +23,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [signInLoading, setSignInLoading] = useState(false);
+  const [signInError, setSignInError] = useState<string | null>(null);
   const isFirebaseEnabled = Boolean(auth);
 
   useEffect(() => {
@@ -37,8 +41,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = useCallback(async () => {
     if (!auth) return;
-    const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
+    setSignInError(null);
+    setSignInLoading(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Sign-in failed';
+      setSignInError(message);
+    } finally {
+      setSignInLoading(false);
+    }
   }, []);
 
   const signOut = useCallback(async () => {
@@ -54,6 +67,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signInWithGoogle,
         signOut,
         isFirebaseEnabled,
+        signInLoading,
+        signInError,
       }}
     >
       {children}

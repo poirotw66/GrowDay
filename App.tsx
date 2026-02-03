@@ -21,12 +21,12 @@ import ReminderSettingsComponent from './components/ReminderSettings';
 import GoalSettings from './components/GoalSettings';
 import ShareCard from './components/ShareCard';
 import EntryChoice, { getGuestChoiceStored } from './components/EntryChoice';
-import { Sprout, Map as MapIcon, Calendar as CalendarIcon, LayoutGrid, Trophy, Settings, BarChart3, Bell, Target, Share2, MoreHorizontal, LogIn, LogOut } from 'lucide-react';
+import { Sprout, Map as MapIcon, Calendar as CalendarIcon, LayoutGrid, Trophy, Settings, BarChart3, Bell, Target, Share2, MoreHorizontal, LogIn, LogOut, Cloud, CloudOff } from 'lucide-react';
 import { playStampSound } from './utils/audio';
 import { startReminderChecker, stopReminderChecker, sendDailyReminder, getReminderSettings } from './utils/notifications';
 
 function App() {
-  const { user, authLoading, signInWithGoogle, signOut, isFirebaseEnabled } = useAuth();
+  const { user, authLoading, signInWithGoogle, signOut, isFirebaseEnabled, signInLoading, signInError } = useAuth();
   const {
     gameState,
     activeHabit,
@@ -58,6 +58,7 @@ function App() {
     // Phase 7: Goals
     addGoal,
     removeGoal,
+    syncStatus,
   } = useHabitEngine();
 
   const [justStamped, setJustStamped] = useState(false);
@@ -211,6 +212,8 @@ function App() {
       <EntryChoice
         onSignIn={signInWithGoogle}
         onContinueAsGuest={() => setChoseGuest(true)}
+        signInLoading={signInLoading}
+        signInError={signInError}
       />
     );
   }
@@ -362,12 +365,18 @@ function App() {
                 {isFirebaseEnabled && (
                   user ? (
                     <div className="flex items-center gap-2">
+                      {syncStatus !== 'idle' && (
+                        <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400" title={syncStatus === 'syncing' ? '同步中' : syncStatus === 'synced' ? '已同步' : '同步失敗'}>
+                          {syncStatus === 'error' ? <CloudOff size={14} /> : <Cloud size={14} className={syncStatus === 'syncing' ? 'animate-pulse' : ''} />}
+                          <span className="hidden sm:inline">{syncStatus === 'syncing' ? '同步中' : syncStatus === 'synced' ? '已同步' : syncStatus === 'error' ? '同步失敗' : ''}</span>
+                        </span>
+                      )}
                       {user.photoURL && <img src={user.photoURL} alt="" className="w-8 h-8 rounded-full border-2 border-slate-200 dark:border-slate-600" />}
                       <span className="hidden sm:inline text-sm font-medium text-slate-600 dark:text-slate-300 truncate max-w-[120px]" title={user.email ?? undefined}>{user.email ?? user.displayName ?? ''}</span>
                       <button onClick={() => signOut()} className="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" title="登出"><LogOut size={18} /></button>
                     </div>
                   ) : (
-                    <button onClick={() => signInWithGoogle()} className="flex items-center gap-2 px-3 py-2 rounded-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors text-sm font-medium" title="使用 Google 登入"><LogIn size={18} /> Google 登入</button>
+                    <button onClick={() => signInWithGoogle()} disabled={signInLoading} className="flex items-center gap-2 px-3 py-2 rounded-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors text-sm font-medium disabled:opacity-60 disabled:pointer-events-none" title="使用 Google 登入"><LogIn size={18} /> {signInLoading ? '登入中…' : 'Google 登入'}</button>
                   )
                 )}
                 {/* Theme Toggle */}
@@ -476,6 +485,7 @@ function App() {
               updateStampStyle={updateStampStyle}
               setCalendarStyle={setCalendarStyle}
               setSoundEffect={setSoundEffect}
+              isFirebaseEnabled={isFirebaseEnabled}
               debugDate={debugDate}
               setDebugDate={setDebugDate}
               debugStartDate={debugStartDate}

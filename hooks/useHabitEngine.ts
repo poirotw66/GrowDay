@@ -105,6 +105,8 @@ export const useHabitEngine = () => {
 
   // Queue for displaying achievement toasts
   const [newlyUnlockedAchievements, setNewlyUnlockedAchievements] = useState<AchievementDef[]>([]);
+  // Cloud sync status for UI (idle | syncing | synced | error)
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle');
 
   // Load from local storage on mount (when not waiting for auth or when no user)
   useEffect(() => {
@@ -189,15 +191,28 @@ export const useHabitEngine = () => {
             const parsed = JSON.parse(local) as Record<string, unknown>;
             const updated = applyMigration(parsed);
             setGameState(updated);
-            if (!cancelled) await setGameStateForUser(user.uid, updated);
+            if (!cancelled) {
+              setSyncStatus('syncing');
+              await setGameStateForUser(user.uid, updated);
+              if (!cancelled) {
+                setSyncStatus('synced');
+                setTimeout(() => setSyncStatus('idle'), 2000);
+              }
+            }
           }
         }
       } catch (e) {
         console.error("Firestore load/save failed", e);
+        if (!cancelled) setSyncStatus('error');
       }
       if (!cancelled) setIsLoaded(true);
     })();
     return () => { cancelled = true; };
+  }, [user]);
+
+  // Reset sync status when user logs out
+  useEffect(() => {
+    if (!user) setSyncStatus('idle');
   }, [user]);
 
   // Save to local storage whenever state changes
@@ -207,11 +222,20 @@ export const useHabitEngine = () => {
     }
   }, [gameState, isLoaded]);
 
-  // Debounced save to Firestore when user is logged in
+  // Debounced save to Firestore when user is logged in; update sync status for UI
   useEffect(() => {
     if (!user || !isLoaded) return;
     const t = setTimeout(() => {
-      setGameStateForUser(user.uid, gameStateRef.current).catch((e) => console.error("Firestore save failed", e));
+      setSyncStatus('syncing');
+      setGameStateForUser(user.uid, gameStateRef.current)
+        .then(() => {
+          setSyncStatus('synced');
+          setTimeout(() => setSyncStatus('idle'), 2000);
+        })
+        .catch((e) => {
+          console.error("Firestore save failed", e);
+          setSyncStatus('error');
+        });
     }, 1500);
     return () => clearTimeout(t);
   }, [gameState, isLoaded, user]);
@@ -804,6 +828,7 @@ export const useHabitEngine = () => {
     gameState,
     activeHabit: gameState.activeHabitId ? gameState.habits[gameState.activeHabitId] : null,
     isLoaded,
+    syncStatus,
     addHabit,
     switchHabit,
     updateStampStyle,

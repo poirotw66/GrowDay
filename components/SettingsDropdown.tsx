@@ -20,6 +20,7 @@ interface SettingsDropdownProps {
   updateStampStyle: (icon: string, color: string) => void;
   setCalendarStyle: (style: CalendarStyle) => void;
   setSoundEffect: (soundId: string) => void;
+  isFirebaseEnabled?: boolean;
   // Debug props
   debugDate: string;
   setDebugDate: (date: string) => void;
@@ -51,6 +52,7 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
   updateStampStyle,
   setCalendarStyle,
   setSoundEffect,
+  isFirebaseEnabled = false,
   debugDate,
   setDebugDate,
   debugStartDate,
@@ -89,6 +91,12 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
           匯入備份
         </button>
       </div>
+
+      {isFirebaseEnabled && (
+        <p className="px-4 py-2 text-xs text-slate-500 dark:text-slate-400 mb-1">
+          若您曾選擇「不登入，直接使用」，可隨時在頂部按「Google 登入」以將本機資料同步到 Google 帳號。
+        </p>
+      )}
 
       {/* Settings Section */}
       <div className="px-4 py-2 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1 mt-2">

@@ -14,9 +14,11 @@ export function setGuestChoiceStored(): void {
 interface Props {
   onSignIn: () => Promise<void>;
   onContinueAsGuest: () => void;
+  signInLoading?: boolean;
+  signInError?: string | null;
 }
 
-const EntryChoice: React.FC<Props> = ({ onSignIn, onContinueAsGuest }) => {
+const EntryChoice: React.FC<Props> = ({ onSignIn, onContinueAsGuest, signInLoading = false, signInError = null }) => {
   const handleGuest = () => {
     setGuestChoiceStored();
     onContinueAsGuest();
@@ -29,19 +31,26 @@ const EntryChoice: React.FC<Props> = ({ onSignIn, onContinueAsGuest }) => {
         <p className="text-slate-600 dark:text-slate-400 mb-8">
           使用 Google 登入可跨裝置同步資料，或直接開始使用（僅存於本機）。
         </p>
+        {signInError && (
+          <p className="mb-4 text-sm text-red-600 dark:text-red-400" role="alert">
+            登入失敗，請重試。
+          </p>
+        )}
         <div className="flex flex-col gap-4">
           <button
             type="button"
             onClick={() => onSignIn()}
-            className="flex items-center justify-center gap-3 w-full px-6 py-4 rounded-2xl bg-white dark:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors font-medium"
+            disabled={signInLoading}
+            className="flex items-center justify-center gap-3 w-full px-6 py-4 rounded-2xl bg-white dark:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors font-medium disabled:opacity-60 disabled:pointer-events-none"
           >
             <LogIn size={22} />
-            Google 登入（同步資料）
+            {signInLoading ? '登入中…' : 'Google 登入（同步資料）'}
           </button>
           <button
             type="button"
             onClick={handleGuest}
-            className="flex items-center justify-center gap-3 w-full px-6 py-4 rounded-2xl bg-slate-100 dark:bg-slate-700/80 border-2 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors font-medium"
+            disabled={signInLoading}
+            className="flex items-center justify-center gap-3 w-full px-6 py-4 rounded-2xl bg-slate-100 dark:bg-slate-700/80 border-2 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors font-medium disabled:opacity-60 disabled:pointer-events-none"
           >
             <User size={22} />
             不登入，直接使用
