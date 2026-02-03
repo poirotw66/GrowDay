@@ -1,14 +1,11 @@
 # 🌱 GrowDay - Habit Tracker App
 
-<div align="center">
 
-![GrowDay Banner](https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6)
 
 **Build good habits with adorable virtual pets! Check in daily and watch your companion grow.**
 
 [繁體中文](./README.md) | [English](#)
 
-</div>
 
 ---
 

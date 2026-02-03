@@ -1,16 +1,9 @@
 # 🌱 GrowDay - 習慣養成應用
 
-<div align="center">
-
-![GrowDay Banner](https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6)
-
 **用可愛的電子寵物陪你養成好習慣！每日打卡，看著你的小夥伴一起成長。**
 
 [English](./README_en.md) | [繁體中文](#)
 
-</div>
-
----
 
 ## ✨ 特色功能
 
