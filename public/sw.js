@@ -36,6 +36,17 @@ self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') return;
 
+  // Skip WebSocket upgrade requests (Vite HMR)
+  const url = new URL(event.request.url);
+  if (url.protocol === 'ws:' || url.protocol === 'wss:') {
+    return;
+  }
+  
+  // Skip Vite HMR WebSocket endpoints
+  if (url.pathname.includes('/?token=') || url.searchParams.has('token')) {
+    return;
+  }
+
   // Skip cross-origin requests (CDN resources like Tailwind, React, etc.)
   if (!event.request.url.startsWith(self.location.origin)) {
     return;

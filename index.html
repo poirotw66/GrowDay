@@ -31,18 +31,34 @@
     <!-- Main App Entry -->
     <script type="module" src="/index.tsx"></script>
     
-    <!-- Service Worker Registration -->
+    <!-- Service Worker Registration (disabled in development) -->
     <script>
+      // Only register Service Worker in production (not in development)
+      // Check if we're in development by checking the hostname
+      const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then((registration) => {
-              console.log('SW registered:', registration.scope);
-            })
-            .catch((error) => {
-              console.log('SW registration failed:', error);
+        if (isDevelopment) {
+          // Unregister any existing service workers in development to prevent WebSocket issues
+          navigator.serviceWorker.getRegistrations().then((registrations) => {
+            registrations.forEach((registration) => {
+              registration.unregister().then(() => {
+                console.log('SW unregistered for development');
+              });
             });
-        });
+          });
+        } else {
+          // Register Service Worker in production only
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js')
+              .then((registration) => {
+                console.log('SW registered:', registration.scope);
+              })
+              .catch((error) => {
+                console.log('SW registration failed:', error);
+              });
+          });
+        }
       }
     </script>
   </body>

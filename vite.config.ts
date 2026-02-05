@@ -11,18 +11,19 @@ export default defineConfig(({ mode }) => {
       base,
       server: {
         port: 3000,
-        host: 'localhost',
+        host: true, // Listen on all addresses (0.0.0.0)
         strictPort: false, // Allow fallback to next available port
-        // Fix HMR WebSocket connection
+        // Simplified HMR configuration - let Vite handle it automatically
         hmr: {
-          port: 3000,
-          protocol: 'ws',
-          host: 'localhost',
-          clientPort: 3000,
+          // Let Vite auto-detect the port and protocol
         },
         // Add headers to fix Cross-Origin-Opener-Policy for Firebase Auth
         headers: {
           'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+        },
+        // Enable WebSocket upgrade
+        watch: {
+          usePolling: false,
         },
       },
       plugins: [react(), tailwindcss()],
