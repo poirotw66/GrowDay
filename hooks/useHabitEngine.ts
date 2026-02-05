@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { GameState, DayLog, Habit, PetColor, PlacedItem, PlacedPet, PetStage, RetiredPet, CalendarStyle, Goal, GoalPeriod, CompletedGoal } from '../types';
+import { GameState, DayLog, Habit, PetColor, PlacedItem, PlacedPet, PetStage, RetiredPet, CalendarStyle, Goal, GoalPeriod, CompletedGoal, CustomStamp } from '../types';
 import { calculateLevel, calculateStreak, STAGE_THRESHOLDS } from '../utils/gameLogic';
 import { getTodayString } from '../utils/dateUtils';
 import { assignRandomPet } from '../utils/petData';
@@ -10,6 +10,7 @@ import { ACHIEVEMENTS, AchievementDef } from '../utils/achievementData';
 import { calculateGoalReward, getGoalProgress, getPeriodStart, isGoalCompleted } from '../utils/goalLogic';
 import { useAuth } from '../contexts/AuthContext';
 import { getGameStateForUser, setGameStateForUser } from '../firebase';
+import { migrateStampsToFirebase, deleteCustomStampFromStorage, isStorageAvailable } from '../utils/firebaseStorage';
 
 const STORAGE_KEY = 'growday_save_v2';
 const OLD_STORAGE_KEY = 'growday_save_v1';
@@ -184,57 +185,142 @@ export const useHabitEngine = () => {
   // When user is set: load from Firestore or upload local state to Firestore.
   // If PENDING_SYNC_KEY is set (user had local changes before refresh, e.g. delete habit),
   // prefer localStorage and push it to Firestore so we don't overwrite with stale remote.
+  // Also migrate Base64 custom stamps to Firebase Storage if available.
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
     (async () => {
       try {
+        setSyncStatus('syncing');
         const remote = await getGameStateForUser(user.uid);
         if (cancelled) return;
         const hasPendingSync = typeof localStorage !== 'undefined' && localStorage.getItem(PENDING_SYNC_KEY);
+        const local = localStorage.getItem(STORAGE_KEY);
+        
         if (remote && typeof remote === 'object' && !hasPendingSync) {
+          // Case 1: Remote data exists, use it
           const updatedState = applyMigration(remote as Record<string, unknown>);
-          setGameState(updatedState);
-        } else if (hasPendingSync) {
-          const local = localStorage.getItem(STORAGE_KEY);
-          if (local) {
-            const parsed = JSON.parse(local) as Record<string, unknown>;
-            const updated = applyMigration(parsed);
-            setGameState(updated);
-            if (!cancelled) {
-              setSyncStatus('syncing');
-              await setGameStateForUser(user.uid, updated);
+          
+          // Migrate Base64 stamps to Firebase Storage if available
+          if (isStorageAvailable() && updatedState.customStamps) {
+            const base64Count = Object.values(updatedState.customStamps).filter(s => s.storageType === 'base64').length;
+            if (base64Count > 0) {
+              const migratedStamps = await migrateStampsToFirebase(updatedState.customStamps, user.uid);
+              updatedState.customStamps = migratedStamps;
+              // Save migrated state
               if (!cancelled) {
-                setPendingSync(false);
-                setSyncStatus('synced');
-                setTimeout(() => setSyncStatus('idle'), 2000);
+                await setGameStateForUser(user.uid, updatedState);
               }
             }
-          } else {
-            if (remote && typeof remote === 'object') {
-              setGameState(applyMigration(remote as Record<string, unknown>));
+          }
+          
+          setGameState(updatedState);
+          if (!cancelled) {
+            setSyncStatus('synced');
+            setTimeout(() => setSyncStatus('idle'), 2000);
+          }
+        } else if (hasPendingSync && local) {
+          // Case 2: Pending sync exists, prefer local and upload
+          const parsed = JSON.parse(local) as Record<string, unknown>;
+          const updated = applyMigration(parsed);
+          
+          // Migrate Base64 stamps to Firebase Storage
+          if (isStorageAvailable() && updated.customStamps) {
+            const migratedStamps = await migrateStampsToFirebase(updated.customStamps, user.uid);
+            updated.customStamps = migratedStamps;
+          }
+          
+          setGameState(updated);
+          if (!cancelled) {
+            await setGameStateForUser(user.uid, updated);
+            if (!cancelled) {
+              setPendingSync(false);
+              setSyncStatus('synced');
+              setTimeout(() => setSyncStatus('idle'), 2000);
             }
-            setPendingSync(false);
+          }
+        } else if (hasPendingSync && !local && remote && typeof remote === 'object') {
+          // Case 3: Pending sync but no local, use remote
+          const updatedState = applyMigration(remote as Record<string, unknown>);
+          
+          // Migrate Base64 stamps if any
+          if (isStorageAvailable() && updatedState.customStamps) {
+            const base64Count = Object.values(updatedState.customStamps).filter(s => s.storageType === 'base64').length;
+            if (base64Count > 0) {
+              const migratedStamps = await migrateStampsToFirebase(updatedState.customStamps, user.uid);
+              updatedState.customStamps = migratedStamps;
+              if (!cancelled) {
+                await setGameStateForUser(user.uid, updatedState);
+              }
+            }
+          }
+          
+          setGameState(updatedState);
+          setPendingSync(false);
+          if (!cancelled) {
+            setSyncStatus('synced');
+            setTimeout(() => setSyncStatus('idle'), 2000);
+          }
+        } else if (local) {
+          // Case 4: No remote data, upload local data
+          const parsed = JSON.parse(local) as Record<string, unknown>;
+          const updated = applyMigration(parsed);
+          
+          // Migrate Base64 stamps to Firebase Storage
+          if (isStorageAvailable() && updated.customStamps) {
+            const migratedStamps = await migrateStampsToFirebase(updated.customStamps, user.uid);
+            updated.customStamps = migratedStamps;
+          }
+          
+          setGameState(updated);
+          if (!cancelled) {
+            await setGameStateForUser(user.uid, updated);
+            if (!cancelled) {
+              setSyncStatus('synced');
+              setTimeout(() => setSyncStatus('idle'), 2000);
+            }
+          }
+        } else if (remote && typeof remote === 'object') {
+          // Case 5: Remote exists but no local, use remote
+          const updatedState = applyMigration(remote as Record<string, unknown>);
+          
+          // Migrate Base64 stamps if any
+          if (isStorageAvailable() && updatedState.customStamps) {
+            const base64Count = Object.values(updatedState.customStamps).filter(s => s.storageType === 'base64').length;
+            if (base64Count > 0) {
+              const migratedStamps = await migrateStampsToFirebase(updatedState.customStamps, user.uid);
+              updatedState.customStamps = migratedStamps;
+              if (!cancelled) {
+                await setGameStateForUser(user.uid, updatedState);
+              }
+            }
+          }
+          
+          setGameState(updatedState);
+          if (!cancelled) {
+            setSyncStatus('synced');
+            setTimeout(() => setSyncStatus('idle'), 2000);
           }
         } else {
-          const local = localStorage.getItem(STORAGE_KEY);
-          if (local) {
-            const parsed = JSON.parse(local) as Record<string, unknown>;
-            const updated = applyMigration(parsed);
-            setGameState(updated);
-            if (!cancelled) {
-              setSyncStatus('syncing');
-              await setGameStateForUser(user.uid, updated);
-              if (!cancelled) {
-                setSyncStatus('synced');
-                setTimeout(() => setSyncStatus('idle'), 2000);
-              }
-            }
+          // Case 6: No remote, no local - use initial state
+          if (!cancelled) {
+            setSyncStatus('synced');
+            setTimeout(() => setSyncStatus('idle'), 2000);
           }
         }
       } catch (e) {
         console.error("Firestore load/save failed", e);
-        if (!cancelled) setSyncStatus('error');
+        if (!cancelled) {
+          setSyncStatus('error');
+          // Log more details for debugging
+          if (e instanceof Error) {
+            console.error("Error details:", {
+              message: e.message,
+              stack: e.stack,
+              name: e.name
+            });
+          }
+        }
       }
       if (!cancelled) setIsLoaded(true);
     })();
@@ -482,6 +568,99 @@ export const useHabitEngine = () => {
           selectedSound: soundId
       }));
   }, []);
+
+  // Custom Stamp Management
+  const addCustomStamp = useCallback((stamp: CustomStamp) => {
+    setGameState(prev => {
+      const customStamps = prev.customStamps || {};
+      const nextState = {
+        ...prev,
+        customStamps: {
+          ...customStamps,
+          [stamp.id]: stamp
+        }
+      };
+      
+      if (user) {
+        setPendingSync(true);
+        lastManualSyncRef.current = Date.now();
+        setGameStateForUser(user.uid, nextState)
+          .then(() => setPendingSync(false))
+          .catch((e) => {
+            console.error('Firestore save failed', e);
+            setSyncStatus('error');
+          });
+      }
+      
+      return nextState;
+    });
+  }, [user]);
+
+  const deleteCustomStamp = useCallback((stampId: string) => {
+    setGameState(prev => {
+      const customStamps = prev.customStamps || {};
+      if (!customStamps[stampId]) return prev;
+
+      const stampToDelete = customStamps[stampId];
+
+      const nextCustomStamps = { ...customStamps };
+      delete nextCustomStamps[stampId];
+
+      // Check if any habit is using this custom stamp
+      const customIconId = `custom:${stampId}`;
+      const habitsUsingStamp = Object.values(prev.habits).filter(
+        h => h.stampIcon === customIconId
+      );
+
+      // Reset habits using this stamp to default icon
+      let nextHabits = { ...prev.habits };
+      if (habitsUsingStamp.length > 0) {
+        habitsUsingStamp.forEach(habit => {
+          nextHabits[habit.id] = {
+            ...habit,
+            stampIcon: 'star' // Default fallback
+          };
+        });
+      }
+
+      const nextState: GameState = {
+        ...prev,
+        customStamps: nextCustomStamps,
+        habits: nextHabits
+      };
+
+      // Delete from Firebase Storage if it's stored there
+      if (user && stampToDelete.storageType === 'firebase' && isStorageAvailable()) {
+        deleteCustomStampFromStorage(user.uid, stampId).catch((e) => {
+          console.warn('Failed to delete stamp from Storage:', e);
+        });
+      }
+
+      // Persist to localStorage immediately
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
+      } catch (_e) {
+        // ignore
+      }
+
+      if (user) {
+        setPendingSync(true);
+        lastManualSyncRef.current = Date.now();
+        setGameStateForUser(user.uid, nextState)
+          .then(() => {
+            setPendingSync(false);
+            setSyncStatus('synced');
+            setTimeout(() => setSyncStatus('idle'), 2000);
+          })
+          .catch((e) => {
+            console.error('Firestore save failed', e);
+            setSyncStatus('error');
+          });
+      }
+
+      return nextState;
+    });
+  }, [user]);
 
   const stampToday = useCallback((x?: number, y?: number, rotation?: number) => {
     const today = getTodayString();
@@ -1005,5 +1184,8 @@ export const useHabitEngine = () => {
     addGoal,
     removeGoal,
     checkGoalCompletion,
+    // Phase 8: Custom Stamps
+    addCustomStamp,
+    deleteCustomStamp,
   };
 };

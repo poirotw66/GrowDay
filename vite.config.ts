@@ -1,6 +1,7 @@
 import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
@@ -10,14 +11,21 @@ export default defineConfig(({ mode }) => {
       base,
       server: {
         port: 3000,
-        host: '0.0.0.0',
+        host: 'localhost',
         strictPort: false, // Allow fallback to next available port
-        // Fix HMR WebSocket connection - auto-detect port
+        // Fix HMR WebSocket connection
         hmr: {
-          clientPort: undefined, // Let Vite auto-detect
+          port: 3000,
+          protocol: 'ws',
+          host: 'localhost',
+          clientPort: 3000,
+        },
+        // Add headers to fix Cross-Origin-Opener-Policy for Firebase Auth
+        headers: {
+          'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
         },
       },
-      plugins: [react()],
+      plugins: [react(), tailwindcss()],
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)

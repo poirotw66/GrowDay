@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useCallback, memo } from 'react';
 import { getCalendarDays, getTodayString } from '../utils/dateUtils';
-import { Habit, CalendarStyle } from '../types';
+import { Habit, CalendarStyle, GameState } from '../types';
 import { STAMP_ICONS, DEFAULT_STAMP_COLOR } from '../utils/stampIcons';
 import { 
     ChevronLeft, ChevronRight, CheckCircle2, 
@@ -16,9 +16,10 @@ interface Props {
   isTodayStamped: boolean;
   style?: CalendarStyle;
   selectedSound: string;
+  gameState?: GameState; // For custom stamps
 }
 
-const CalendarView: React.FC<Props> = memo(function CalendarView({ habit, onStamp, isTodayStamped, style = 'handdrawn' as CalendarStyle, selectedSound }) {
+const CalendarView: React.FC<Props> = memo(function CalendarView({ habit, onStamp, isTodayStamped, style = 'handdrawn' as CalendarStyle, selectedSound, gameState }) {
   const [displayDate, setDisplayDate] = useState(new Date());
   const [showStampModal, setShowStampModal] = useState(false);
   
@@ -28,7 +29,29 @@ const CalendarView: React.FC<Props> = memo(function CalendarView({ habit, onStam
   // Memoize expensive calendar calculation
   const days = useMemo(() => getCalendarDays(year, month), [year, month]);
   const todayStr = useMemo(() => getTodayString(), []);
+  
   const stampColor = habit.stampColor || DEFAULT_STAMP_COLOR;
+
+  // Helper function to render stamp icon (built-in or custom)
+  const renderStampIcon = useCallback((iconId: string, size: number = 28, strokeWidth: number = 2.5) => {
+    if (iconId.startsWith('custom:')) {
+      const stampId = iconId.replace('custom:', '');
+      const customStamp = gameState?.customStamps?.[stampId];
+      if (customStamp) {
+        return (
+          <img
+            src={customStamp.imageData}
+            alt={customStamp.name || '自訂印章'}
+            style={{ width: size, height: size }}
+            className="opacity-90"
+          />
+        );
+      }
+    }
+    // Fallback to built-in icon
+    const Icon = STAMP_ICONS[iconId] || Star;
+    return <Icon size={size} strokeWidth={strokeWidth} className="opacity-90" />;
+  }, [gameState?.customStamps]);
 
   // Get the icon component directly from the record - avoid useMemo to prevent static-components error
   const StampIcon = STAMP_ICONS[habit.stampIcon] || Star;
@@ -274,6 +297,7 @@ const CalendarView: React.FC<Props> = memo(function CalendarView({ habit, onStam
             selectedSound={selectedSound}
             onClose={() => setShowStampModal(false)}
             onConfirm={handleStampConfirm}
+            gameState={gameState}
           />
       )}
 
@@ -319,7 +343,7 @@ const CalendarView: React.FC<Props> = memo(function CalendarView({ habit, onStam
             
             const dayIconId = log?.icon || habit.stampIcon;
             const dayColor = log?.color || stampColor;
-            const DayStampIcon = STAMP_ICONS[dayIconId] || Star;
+            const isCustomStamp = dayIconId.startsWith('custom:');
             
             const posX = log?.position?.x ?? 50;
             const posY = log?.position?.y ?? 50;
@@ -373,7 +397,7 @@ const CalendarView: React.FC<Props> = memo(function CalendarView({ habit, onStam
                                 ['--scale-end' as keyof React.CSSProperties]: finalScale,
                             }}
                         >
-                            <DayStampIcon size={28} strokeWidth={style === 'american' ? 3 : 2.5} className="opacity-90" />
+                            {renderStampIcon(dayIconId, 28, style === 'american' ? 3 : 2.5)}
                         </div>
                     )}
                 </div>

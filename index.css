@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Raleway', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-heading: 'Lora', Georgia, serif;
+  
+  --color-primary: #0D9488;
+  --color-primary-light: #14B8A6;
+  --color-primary-dark: #0F766E;
+  --color-cta: #F97316;
+  --color-surface: #F0FDFA;
+  --color-ink: #134E4A;
+  
+  /* Map to existing class names used in code */
+  --font-family-sans: var(--font-sans);
+  --font-family-heading: var(--font-heading);
+}
+
+body {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html, * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+[tabindex]:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px white, 0 0 0 4px #0D9488;
+}
+
+.dark button:focus-visible,
+.dark a:focus-visible,
+.dark input:focus-visible,
+.dark [tabindex]:focus-visible {
+  box-shadow: 0 0 0 2px #1e293b, 0 0 0 4px #14B8A6;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

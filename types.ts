@@ -130,6 +130,9 @@ export interface GameState {
   // Phase 7: Goals
   goals?: Goal[];
   completedGoals?: CompletedGoal[];
+
+  // Phase 8: Custom Stamps
+  customStamps?: Record<string, CustomStamp>;  // Map<stampId, CustomStamp>
 }
 
 // Goal System
@@ -148,6 +151,18 @@ export interface CompletedGoal {
   goalId: string;
   completedAt: string; // ISO date string
   periodStart: string; // The start of the period when completed
+}
+
+// Custom Stamp System
+export interface CustomStamp {
+  id: string;              // Unique ID (UUID)
+  userId?: string;         // Firebase UID (for logged-in users)
+  name: string;            // User-defined name (optional display name)
+  imageData: string;        // Base64 string or Firebase Storage URL
+  storageType: 'base64' | 'firebase';  // Storage method
+  createdAt: string;       // ISO date string
+  fileSize: number;        // File size in bytes
+  mimeType: string;        // image/png, image/jpeg, image/svg+xml
 }
 
 // Define the visual stages of the pet

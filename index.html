@@ -17,84 +17,13 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="GrowDay" />
     
+    <!-- Security headers for Firebase Auth popup -->
+    <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin-allow-popups" />
+    
     <!-- Design system: Lora (headings) + Raleway (body) - calm, wellness -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Raleway:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-    <!-- Tailwind CSS (CDN for development, will be replaced in production build) -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        darkMode: 'class',
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Raleway', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
-              heading: ['Lora', 'Georgia', 'serif'],
-            },
-            colors: {
-              primary: { DEFAULT: '#0D9488', light: '#14B8A6', dark: '#0F766E' },
-              cta: '#F97316',
-              surface: '#F0FDFA',
-              ink: '#134E4A',
-            },
-            animation: {
-              'bounce-short': 'bounce 1s infinite',
-            },
-            transitionDuration: { DEFAULT: '200ms' },
-          }
-        }
-      }
-    </script>
-    <style>
-      body {
-        -webkit-tap-highlight-color: transparent;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-      }
-      html {
-        transition: background-color 0.3s ease, color 0.3s ease;
-        scroll-behavior: smooth;
-      }
-      @media (prefers-reduced-motion: reduce) {
-        html, * {
-          animation-duration: 0.01ms !important;
-          animation-iteration-count: 1 !important;
-          transition-duration: 0.01ms !important;
-        }
-      }
-      button:focus-visible,
-      a:focus-visible,
-      input:focus-visible,
-      [tabindex]:focus-visible {
-        outline: none;
-        box-shadow: 0 0 0 2px white, 0 0 0 4px #0D9488;
-      }
-      .dark button:focus-visible,
-      .dark a:focus-visible,
-      .dark input:focus-visible,
-      .dark [tabindex]:focus-visible {
-        box-shadow: 0 0 0 2px #1e293b, 0 0 0 4px #14B8A6;
-      }
-      .scrollbar-hide {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-      }
-      .scrollbar-hide::-webkit-scrollbar {
-        display: none;
-      }
-    </style>
-    
-  <script type="importmap">
-{
-  "imports": {
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3",
-    "lucide-react": "https://esm.sh/lucide-react@^0.563.0"
-  }
-}
-</script>
 </head>
   <body>
     <div id="root"></div>

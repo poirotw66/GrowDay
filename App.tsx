@@ -62,6 +62,9 @@ function App() {
     addGoal,
     removeGoal,
     syncStatus,
+    // Phase 8: Custom Stamps
+    addCustomStamp,
+    deleteCustomStamp,
   } = useHabitEngine();
 
   const [justStamped, setJustStamped] = useState(false);
@@ -76,6 +79,7 @@ function App() {
   const [showShareCard, setShowShareCard] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [choseGuest, setChoseGuest] = useState(false);
+  const [userImageError, setUserImageError] = useState<Record<string, boolean>>({});
 
   // Theme hook
   const { resolvedTheme } = useTheme();
@@ -374,7 +378,21 @@ function App() {
                           <span className="hidden sm:inline">{syncStatus === 'syncing' ? '同步中' : syncStatus === 'synced' ? '已同步' : syncStatus === 'error' ? '同步失敗' : ''}</span>
                         </span>
                       )}
-                      {user.photoURL && <img src={user.photoURL} alt="" className="w-8 h-8 rounded-full border-2 border-slate-200 dark:border-slate-600" />}
+                      {user.photoURL && !userImageError[user.uid] ? (
+                        <img 
+                          src={user.photoURL} 
+                          alt={user.displayName || user.email || '用戶頭像'} 
+                          className="w-8 h-8 rounded-full border-2 border-slate-200 dark:border-slate-600 object-cover"
+                          onError={() => setUserImageError(prev => ({ ...prev, [user.uid]: true }))}
+                        />
+                      ) : (
+                        <div 
+                          className="w-8 h-8 rounded-full border-2 border-slate-200 dark:border-slate-600 bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary dark:text-primary-light font-bold text-sm"
+                          aria-hidden="true"
+                        >
+                          {(user.displayName || user.email || 'U')[0].toUpperCase()}
+                        </div>
+                      )}
                       <span className="hidden sm:inline text-sm font-medium text-slate-600 dark:text-slate-300 truncate max-w-[120px]" title={user.email ?? undefined}>{user.email ?? user.displayName ?? ''}</span>
                       <button onClick={() => signOut()} className="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors duration-200 cursor-pointer" title="登出" aria-label="登出"><LogOut size={18} /></button>
                     </div>
@@ -501,6 +519,9 @@ function App() {
               deleteHabit={deleteHabit}
               onCloseSettings={handleCloseSettings}
               isFirebaseEnabled={isFirebaseEnabled}
+              userId={user?.uid || null}
+              onAddCustomStamp={addCustomStamp}
+              onDeleteCustomStamp={deleteCustomStamp}
               debugDate={debugDate}
               setDebugDate={setDebugDate}
               debugStartDate={debugStartDate}
@@ -584,6 +605,7 @@ function App() {
                   isTodayStamped={isTodayStamped()}
                   style={gameState.calendarStyle}
                   selectedSound={gameState.selectedSound}
+                  gameState={gameState}
                 />
              ) : (
                 <OverallCalendarView 

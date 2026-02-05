@@ -3,6 +3,7 @@ import React, { useState, useRef } from 'react';
 import { STAMP_ICONS, DEFAULT_STAMP_COLOR } from '../utils/stampIcons';
 import { X, Star } from 'lucide-react';
 import { playStampSound } from '../utils/audio';
+import { GameState } from '../types';
 
 interface Props {
   habitName: string;
@@ -11,13 +12,32 @@ interface Props {
   selectedSound: string;
   onConfirm: (x: number, y: number, rotation: number) => void;
   onClose: () => void;
+  gameState?: GameState; // For custom stamps
 }
 
-const DailyStampModal: React.FC<Props> = ({ habitName, stampIconId, stampColor, selectedSound, onConfirm, onClose }) => {
+const DailyStampModal: React.FC<Props> = ({ habitName, stampIconId, stampColor, selectedSound, onConfirm, onClose, gameState }) => {
   const [stampedPos, setStampedPos] = useState<{x: number, y: number, rotation: number} | null>(null);
   const paperRef = useRef<HTMLDivElement>(null);
-  // Get the icon component directly from the record
-  const StampIcon = STAMP_ICONS[stampIconId] || Star;
+  
+  // Helper to render stamp icon (built-in or custom)
+  const renderStampIcon = (iconId: string, size: number = 120) => {
+    if (iconId.startsWith('custom:')) {
+      const stampId = iconId.replace('custom:', '');
+      const customStamp = gameState?.customStamps?.[stampId];
+      if (customStamp) {
+        return (
+          <img
+            src={customStamp.imageData}
+            alt={customStamp.name || '自訂印章'}
+            style={{ width: size, height: size }}
+          />
+        );
+      }
+    }
+    // Fallback to built-in icon
+    const Icon = STAMP_ICONS[iconId] || Star;
+    return <Icon size={size} strokeWidth={2.5} />;
+  };
   const today = new Date();
   const dateStr = `${today.getMonth() + 1}月${today.getDate()}日`;
   const yearStr = today.getFullYear();
@@ -113,7 +133,7 @@ const DailyStampModal: React.FC<Props> = ({ habitName, stampIconId, stampColor, 
                 }}
             >
                 <div className="relative">
-                    <StampIcon size={120} strokeWidth={2.5} />
+                    {renderStampIcon(stampIconId, 120)}
                     {/* Ink Splatter Effect */}
                     <div className="absolute inset-0 border-4 rounded-full opacity-0 animate-ping" style={{ borderColor: color, animationDuration: '0.5s' }}></div>
                 </div>
