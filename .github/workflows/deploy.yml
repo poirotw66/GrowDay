@@ -36,15 +36,61 @@ jobs:
       - name: Verify Firebase Secrets
         run: |
           echo "Checking Firebase Secrets..."
+          MISSING_SECRETS=0
+          
           if [ -z "${{ secrets.VITE_FIREBASE_API_KEY }}" ]; then
             echo "❌ ERROR: VITE_FIREBASE_API_KEY is not set"
-            exit 1
+            MISSING_SECRETS=$((MISSING_SECRETS + 1))
+          else
+            echo "✅ VITE_FIREBASE_API_KEY is set"
           fi
+          
+          if [ -z "${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}" ]; then
+            echo "❌ ERROR: VITE_FIREBASE_AUTH_DOMAIN is not set"
+            MISSING_SECRETS=$((MISSING_SECRETS + 1))
+          else
+            echo "✅ VITE_FIREBASE_AUTH_DOMAIN is set"
+          fi
+          
           if [ -z "${{ secrets.VITE_FIREBASE_PROJECT_ID }}" ]; then
             echo "❌ ERROR: VITE_FIREBASE_PROJECT_ID is not set"
+            MISSING_SECRETS=$((MISSING_SECRETS + 1))
+          else
+            echo "✅ VITE_FIREBASE_PROJECT_ID is set"
+          fi
+          
+          if [ -z "${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}" ]; then
+            echo "❌ ERROR: VITE_FIREBASE_STORAGE_BUCKET is not set"
+            MISSING_SECRETS=$((MISSING_SECRETS + 1))
+          else
+            echo "✅ VITE_FIREBASE_STORAGE_BUCKET is set"
+          fi
+          
+          if [ -z "${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}" ]; then
+            echo "❌ ERROR: VITE_FIREBASE_MESSAGING_SENDER_ID is not set"
+            MISSING_SECRETS=$((MISSING_SECRETS + 1))
+          else
+            echo "✅ VITE_FIREBASE_MESSAGING_SENDER_ID is set"
+          fi
+          
+          if [ -z "${{ secrets.VITE_FIREBASE_APP_ID }}" ]; then
+            echo "❌ ERROR: VITE_FIREBASE_APP_ID is not set"
+            MISSING_SECRETS=$((MISSING_SECRETS + 1))
+          else
+            echo "✅ VITE_FIREBASE_APP_ID is set"
+          fi
+          
+          if [ $MISSING_SECRETS -gt 0 ]; then
+            echo ""
+            echo "❌ Build failed: $MISSING_SECRETS secret(s) are missing"
+            echo "Please set all Firebase Secrets in:"
+            echo "Repository Settings → Secrets and variables → Actions"
+            echo "See docs/FIREBASE_SETUP.md for detailed instructions"
             exit 1
           fi
-          echo "✅ Firebase Secrets are set (values are hidden for security)"
+          
+          echo ""
+          echo "✅ All Firebase Secrets are set (values are hidden for security)"
 
       - name: Build
         run: npm run build
