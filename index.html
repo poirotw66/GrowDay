@@ -51,28 +51,44 @@
           // Register Service Worker in production only
           // Use relative path to support GitHub Pages subpath (e.g., /GrowDay/)
           window.addEventListener('load', () => {
-            // Get base path from current location
-            // For GitHub Pages: if URL is https://username.github.io/GrowDay/, basePath is '/GrowDay/'
-            const pathname = window.location.pathname;
-            const basePath = pathname.endsWith('/') ? pathname : pathname.substring(0, pathname.lastIndexOf('/') + 1);
-            const swPath = basePath + 'sw.js';
+            // Use relative path './sw.js' - resolves based on current page location
+            // If page is at /GrowDay/index.html, './sw.js' resolves to /GrowDay/sw.js
+            // If page is at /index.html, './sw.js' resolves to /sw.js
+            const swPath = './sw.js';
             
-            navigator.serviceWorker.register(swPath, { scope: basePath })
+            // Calculate scope from current location
+            // Scope should match the directory where the page is served from
+            const pathname = window.location.pathname;
+            let scope = '/';
+            
+            // If pathname contains more than just '/', extract the base path
+            if (pathname !== '/' && pathname !== '/index.html') {
+              const pathSegments = pathname.split('/').filter(s => s && s !== 'index.html');
+              if (pathSegments.length > 0) {
+                scope = '/' + pathSegments[0] + '/';
+              }
+            }
+            
+            // Resolve the full URL for debugging
+            const swUrl = new URL(swPath, window.location.href).href;
+            
+            navigator.serviceWorker.register(swPath, { scope: scope })
               .then((registration) => {
-                console.log('SW registered:', registration.scope);
+                console.log('✅ SW registered:', {
+                  scope: registration.scope,
+                  script: swPath,
+                  resolvedUrl: swUrl
+                });
               })
               .catch((error) => {
-                console.log('SW registration failed:', error);
-                // Fallback: try registering with relative path
-                if (swPath !== './sw.js') {
-                  navigator.serviceWorker.register('./sw.js')
-                    .then((registration) => {
-                      console.log('SW registered (fallback):', registration.scope);
-                    })
-                    .catch((fallbackError) => {
-                      console.log('SW registration (fallback) failed:', fallbackError);
-                    });
-                }
+                console.error('❌ SW registration failed:', error);
+                console.log('Debug info:', {
+                  attemptedPath: swPath,
+                  resolvedUrl: swUrl,
+                  scope: scope,
+                  currentPathname: pathname,
+                  suggestion: 'Verify sw.js exists at: ' + swUrl
+                });
               });
           });
         }
