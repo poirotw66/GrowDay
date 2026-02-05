@@ -33,6 +33,19 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify Firebase Secrets
+        run: |
+          echo "Checking Firebase Secrets..."
+          if [ -z "${{ secrets.VITE_FIREBASE_API_KEY }}" ]; then
+            echo "❌ ERROR: VITE_FIREBASE_API_KEY is not set"
+            exit 1
+          fi
+          if [ -z "${{ secrets.VITE_FIREBASE_PROJECT_ID }}" ]; then
+            echo "❌ ERROR: VITE_FIREBASE_PROJECT_ID is not set"
+            exit 1
+          fi
+          echo "✅ Firebase Secrets are set (values are hidden for security)"
+
       - name: Build
         run: npm run build
         env:

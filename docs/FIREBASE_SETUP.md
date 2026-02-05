@@ -208,8 +208,18 @@ service firebase.storage {
    - `VITE_FIREBASE_MESSAGING_SENDER_ID`：你的 Firebase Messaging Sender ID
    - `VITE_FIREBASE_APP_ID`：你的 Firebase App ID
 
-4. 每個 Secret 的名稱必須**完全匹配**（包括 `VITE_` 前綴）
-5. 值不需要引號，直接貼上即可
+4. **每個 Secret 的名稱必須完全匹配**（包括 `VITE_` 前綴）
+5. **值不需要引號**，直接貼上即可
+6. **不要有前後空格或換行**
+
+**重要提示**：
+- 可以從你的 `.env` 文件中複製值（不要複製變數名稱，只複製值）
+- 例如：如果 `.env` 中是 `VITE_FIREBASE_API_KEY=AIzaSy...`，Secret 的值應該是 `AIzaSy...`（不包含 `VITE_FIREBASE_API_KEY=` 和引號）
+
+**驗證 Secrets 是否設置正確**：
+- 設置完成後，重新觸發部署
+- 在 GitHub Actions 構建日誌中，應該看到 "✅ Firebase Secrets are set"
+- 如果看到 "❌ ERROR"，說明對應的 Secret 未設置
 
 ### 步驟 2：確認部署工作流程
 

@@ -40,20 +40,37 @@ export const db = firebase?.db ?? null;
 export const storage = firebase?.storage ?? null;
 export const isFirebaseEnabled = Boolean(firebase);
 
-// Debug helper: Log Firebase config status (only in development or if explicitly enabled)
+// Debug helper: Log Firebase config status (always log in production for debugging)
 if (typeof window !== 'undefined') {
   const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   const debugEnabled = new URLSearchParams(window.location.search).has('debug-firebase');
   
-  if (isDev || debugEnabled) {
+  // Always log in production, or if debug-firebase is in URL
+  if (!isDev || debugEnabled) {
     console.group('🔥 Firebase Configuration Status');
-    console.log('API Key:', firebaseConfig.apiKey ? '✅ Set' : '❌ Missing');
+    console.log('Environment:', isDev ? 'Development' : 'Production');
+    console.log('API Key:', firebaseConfig.apiKey ? `✅ Set (${firebaseConfig.apiKey.substring(0, 10)}...)` : '❌ Missing');
     console.log('Auth Domain:', firebaseConfig.authDomain || '❌ Missing');
     console.log('Project ID:', firebaseConfig.projectId || '❌ Missing');
     console.log('Storage Bucket:', firebaseConfig.storageBucket || '❌ Missing');
+    console.log('Messaging Sender ID:', firebaseConfig.messagingSenderId || '❌ Missing');
+    console.log('App ID:', firebaseConfig.appId || '❌ Missing');
     console.log('Firebase Initialized:', isFirebaseEnabled ? '✅ Yes' : '❌ No');
     console.log('Auth Available:', auth ? '✅ Yes' : '❌ No');
     console.log('Firestore Available:', db ? '✅ Yes' : '❌ No');
+    
+    // Check raw environment variables
+    console.log('Raw env vars:', {
+      VITE_FIREBASE_API_KEY: import.meta.env.VITE_FIREBASE_API_KEY ? 'Set' : 'Missing',
+      VITE_FIREBASE_PROJECT_ID: import.meta.env.VITE_FIREBASE_PROJECT_ID ? 'Set' : 'Missing',
+    });
+    
+    if (!isFirebaseEnabled) {
+      console.error('❌ Firebase is NOT enabled. Check:');
+      console.error('1. GitHub Secrets are set correctly');
+      console.error('2. Environment variables are injected during build');
+      console.error('3. Add ?debug-firebase to URL for more info');
+    }
     console.groupEnd();
   }
 }

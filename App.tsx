@@ -397,7 +397,23 @@ function App() {
                       <button onClick={() => signOut()} className="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors duration-200 cursor-pointer" title="登出" aria-label="登出"><LogOut size={18} /></button>
                     </div>
                   ) : (
-                    <button onClick={() => signInWithGoogle()} disabled={signInLoading} className="flex items-center gap-2 px-3 py-2 rounded-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors duration-200 text-sm font-medium disabled:opacity-60 disabled:pointer-events-none cursor-pointer" title="使用 Google 登入" aria-label="使用 Google 登入"><LogIn size={18} /> {signInLoading ? '登入中…' : 'Google 登入'}</button>
+                    <button 
+                      onClick={() => {
+                        if (!isFirebaseEnabled) {
+                          console.error('Firebase is not enabled. Check browser console for details.');
+                          alert('Firebase 未啟用。請檢查瀏覽器控制台的錯誤訊息，或訪問：' + window.location.href + '?debug-firebase');
+                          return;
+                        }
+                        signInWithGoogle();
+                      }} 
+                      disabled={signInLoading || !isFirebaseEnabled} 
+                      className="flex items-center gap-2 px-3 py-2 rounded-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors duration-200 text-sm font-medium disabled:opacity-60 disabled:pointer-events-none cursor-pointer" 
+                      title={!isFirebaseEnabled ? "Firebase 未啟用" : "使用 Google 登入"} 
+                      aria-label="使用 Google 登入"
+                    >
+                      <LogIn size={18} /> 
+                      {signInLoading ? '登入中…' : 'Google 登入'}
+                    </button>
                   )
                 )}
                 {/* Theme Toggle */}
