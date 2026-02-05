@@ -49,13 +49,30 @@
           });
         } else {
           // Register Service Worker in production only
+          // Use relative path to support GitHub Pages subpath (e.g., /GrowDay/)
           window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js')
+            // Get base path from current location
+            // For GitHub Pages: if URL is https://username.github.io/GrowDay/, basePath is '/GrowDay/'
+            const pathname = window.location.pathname;
+            const basePath = pathname.endsWith('/') ? pathname : pathname.substring(0, pathname.lastIndexOf('/') + 1);
+            const swPath = basePath + 'sw.js';
+            
+            navigator.serviceWorker.register(swPath, { scope: basePath })
               .then((registration) => {
                 console.log('SW registered:', registration.scope);
               })
               .catch((error) => {
                 console.log('SW registration failed:', error);
+                // Fallback: try registering with relative path
+                if (swPath !== './sw.js') {
+                  navigator.serviceWorker.register('./sw.js')
+                    .then((registration) => {
+                      console.log('SW registered (fallback):', registration.scope);
+                    })
+                    .catch((fallbackError) => {
+                      console.log('SW registration (fallback) failed:', fallbackError);
+                    });
+                }
               });
           });
         }

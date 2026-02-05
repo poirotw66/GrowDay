@@ -1,8 +1,21 @@
 const CACHE_NAME = 'growday-v1';
+
+// Get base path from service worker location
+// For GitHub Pages: if sw.js is at /GrowDay/sw.js, basePath is '/GrowDay/'
+const getBasePath = () => {
+  // Get path from service worker script location
+  const swPath = self.location.pathname;
+  // Remove '/sw.js' from the end to get base path
+  const basePath = swPath.replace(/\/sw\.js$/, '');
+  // Ensure it ends with '/'
+  return basePath.endsWith('/') ? basePath : basePath + '/';
+};
+
+const BASE_PATH = getBasePath();
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
+  BASE_PATH,
+  BASE_PATH + 'index.html',
+  BASE_PATH + 'manifest.json',
 ];
 
 // Install event - cache static assets
@@ -82,7 +95,7 @@ self.addEventListener('fetch', (event) => {
       }).catch(() => {
         // If both cache and network fail, return offline page for navigation
         if (event.request.mode === 'navigate') {
-          return caches.match('/');
+          return caches.match(BASE_PATH + 'index.html') || caches.match(BASE_PATH);
         }
         return new Response('Offline', { status: 503 });
       });

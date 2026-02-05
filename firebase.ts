@@ -40,6 +40,24 @@ export const db = firebase?.db ?? null;
 export const storage = firebase?.storage ?? null;
 export const isFirebaseEnabled = Boolean(firebase);
 
+// Debug helper: Log Firebase config status (only in development or if explicitly enabled)
+if (typeof window !== 'undefined') {
+  const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  const debugEnabled = new URLSearchParams(window.location.search).has('debug-firebase');
+  
+  if (isDev || debugEnabled) {
+    console.group('🔥 Firebase Configuration Status');
+    console.log('API Key:', firebaseConfig.apiKey ? '✅ Set' : '❌ Missing');
+    console.log('Auth Domain:', firebaseConfig.authDomain || '❌ Missing');
+    console.log('Project ID:', firebaseConfig.projectId || '❌ Missing');
+    console.log('Storage Bucket:', firebaseConfig.storageBucket || '❌ Missing');
+    console.log('Firebase Initialized:', isFirebaseEnabled ? '✅ Yes' : '❌ No');
+    console.log('Auth Available:', auth ? '✅ Yes' : '❌ No');
+    console.log('Firestore Available:', db ? '✅ Yes' : '❌ No');
+    console.groupEnd();
+  }
+}
+
 const USERS_COLLECTION = 'users';
 const GAME_STATE_FIELD = 'gameState';
 const UPDATED_AT_FIELD = 'updatedAt';
