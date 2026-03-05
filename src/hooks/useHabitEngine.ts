@@ -24,20 +24,9 @@ export function useHabitEngine() {
     applyAchievements,
   } = useAchievementToasts();
 
-  const habitActions = useHabitActions(
-    gameState,
-    setGameState,
-    syncHelpers,
-    applyAchievements
-  );
-
-  const worldActions = useWorldActions(
-    setGameState,
-    syncHelpers,
-    applyAchievements
-  );
-
-  const { retireHabit } = usePetLogic(setGameState, applyAchievements);
+  const habitActions = useHabitActions(applyAchievements);
+  const worldActions = useWorldActions(applyAchievements);
+  const { retireHabit } = usePetLogic(applyAchievements);
 
   return {
     gameState,

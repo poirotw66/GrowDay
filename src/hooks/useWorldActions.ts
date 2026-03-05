@@ -1,18 +1,15 @@
 import { useCallback } from 'react';
 import { GameState, PlacedItem, PlacedPet, PetStage } from '../types';
 import { DECORATION_ITEMS, INITIAL_AREAS } from '../utils/worldData';
-import { setGameStateForUser } from '../firebase';
-import type { SyncHelpers } from '../store/useGameState';
+import { useGameStore, selectSetGameState } from '../store/gameStateStore';
 
 /**
- * World and decoration actions: buy, place, remove decorations; place/remove pets in areas; unlock areas.
+ * Self-contained world actions. Writes to Zustand store; Firestore sync is handled in useGameState.
  */
 export function useWorldActions(
-  setGameState: React.Dispatch<React.SetStateAction<GameState>>,
-  syncHelpers: SyncHelpers,
   applyAchievements: (state: GameState) => GameState
 ) {
-  const { user, markManualSync, setPendingSync, setSyncStatus } = syncHelpers;
+  const setGameState = useGameStore(selectSetGameState);
 
   const buyDecoration = useCallback(
     (itemId: string) => {
@@ -24,28 +21,10 @@ export function useWorldActions(
           coins: prev.coins - item.price,
           inventory: [...prev.inventory, itemId],
         };
-        const finalState = applyAchievements(nextState);
-        if (user) {
-          setPendingSync(true);
-          markManualSync();
-          setGameStateForUser(user.uid, finalState)
-            .then(() => setPendingSync(false))
-            .catch((e) => {
-              console.error('Firestore save failed', e);
-              setSyncStatus('error');
-            });
-        }
-        return finalState;
+        return applyAchievements(nextState);
       });
     },
-    [
-      user,
-      markManualSync,
-      setPendingSync,
-      setSyncStatus,
-      applyAchievements,
-      setGameState,
-    ]
+    [applyAchievements, setGameState]
   );
 
   const placeDecoration = useCallback(

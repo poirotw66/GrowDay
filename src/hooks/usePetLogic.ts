@@ -4,15 +4,15 @@ import { getTodayString } from '../utils/dateUtils';
 import { assignRandomPet } from '../utils/petData';
 import { STAGE_THRESHOLDS } from '../utils/gameLogic';
 import { playUnlockSound } from '../utils/audio';
+import { useGameStore, selectSetGameState } from '../store/gameStateStore';
 
 /**
- * Pet-specific actions: retirement (legacy). Nickname is in useHabitActions.
- * This hook only handles retireHabit (level-based pet retirement and new pet assignment).
+ * Self-contained pet actions. Writes to Zustand store; Firestore sync is handled in useGameState.
  */
 export function usePetLogic(
-  setGameState: React.Dispatch<React.SetStateAction<GameState>>,
   applyAchievements: (state: GameState) => GameState
 ) {
+  const setGameState = useGameStore(selectSetGameState);
   const retireHabit = useCallback(
     (habitId: string) => {
       setGameState((prev) => {

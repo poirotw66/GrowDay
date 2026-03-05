@@ -20,22 +20,24 @@ import {
   isGoalCompleted,
 } from '../utils/goalLogic';
 import { getHabitMonthlyCount, checkUnlockableIcons } from '../utils/habitHelpers';
-import { setGameStateForUser } from '../firebase';
 import {
   deleteCustomStampFromStorage,
   isStorageAvailable,
 } from '../utils/firebaseStorage';
 import { playUnlockSound } from '../utils/audio';
+import { useAuth } from '../contexts/AuthContext';
 import { applyMigration, INITIAL_STATE, STORAGE_KEY, OLD_STORAGE_KEY } from '../store/useGameState';
-import type { SyncHelpers } from '../store/useGameState';
+import { useGameStore, selectGameState, selectSetGameState } from '../store/gameStateStore';
 
+/**
+ * Self-contained habit actions. Reads/writes Zustand store; Firestore sync is handled in useGameState.
+ */
 export function useHabitActions(
-  gameState: GameState,
-  setGameState: React.Dispatch<React.SetStateAction<GameState>>,
-  syncHelpers: SyncHelpers,
   applyAchievements: (state: GameState) => GameState
 ) {
-  const { user, markManualSync, setSyncStatus, setPendingSync } = syncHelpers;
+  const gameState = useGameStore(selectGameState);
+  const setGameState = useGameStore(selectSetGameState);
+  const { user } = useAuth();
 
   const addHabit = useCallback(
     (
@@ -72,18 +74,10 @@ export function useHabitActions(
           ),
           isOnboarded: true,
         };
-        const finalState = applyAchievements(nextState);
-        if (user) {
-          setPendingSync(true);
-          markManualSync();
-          setGameStateForUser(user.uid, finalState)
-            .then(() => setPendingSync(false))
-            .catch((e) => console.error('Firestore save failed', e));
-        }
-        return finalState;
+        return applyAchievements(nextState);
       });
     },
-    [user, markManualSync, setPendingSync, applyAchievements, setGameState]
+    [applyAchievements, setGameState]
   );
 
   const switchHabit = useCallback(
@@ -169,37 +163,15 @@ export function useHabitActions(
         const nextGoals = (prev.goals ?? []).filter(
           (g) => g.habitId !== habitId
         );
-        const nextState: GameState = {
+        return {
           ...prev,
           habits: nextHabits,
           activeHabitId: nextActiveId,
           goals: nextGoals,
         };
-        if (user) {
-          setSyncStatus('syncing');
-          setPendingSync(true);
-          markManualSync();
-          setGameStateForUser(user.uid, nextState)
-            .then(() => {
-              setPendingSync(false);
-              setSyncStatus('synced');
-              setTimeout(() => setSyncStatus('idle'), 2000);
-            })
-            .catch((e) => {
-              console.error('Firestore save failed', e);
-              setSyncStatus('error');
-            });
-        }
-        return nextState;
       });
     },
-    [
-      user,
-      markManualSync,
-      setSyncStatus,
-      setPendingSync,
-      setGameState,
-    ]
+    [setGameState]
   );
 
   const setCalendarStyle = useCallback(
@@ -220,30 +192,13 @@ export function useHabitActions(
     (stamp: CustomStamp) => {
       setGameState((prev) => {
         const customStamps = prev.customStamps || {};
-        const nextState = {
+        return {
           ...prev,
           customStamps: { ...customStamps, [stamp.id]: stamp },
         };
-        if (user) {
-          setPendingSync(true);
-          markManualSync();
-          setGameStateForUser(user.uid, nextState)
-            .then(() => setPendingSync(false))
-            .catch((e) => {
-              console.error('Firestore save failed', e);
-              setSyncStatus('error');
-            });
-        }
-        return nextState;
       });
     },
-    [
-      user,
-      markManualSync,
-      setPendingSync,
-      setSyncStatus,
-      setGameState,
-    ]
+    [setGameState]
   );
 
   const deleteCustomStamp = useCallback(
@@ -281,30 +236,10 @@ export function useHabitActions(
             console.warn('Failed to delete stamp from Storage:', e);
           });
         }
-        if (user) {
-          setPendingSync(true);
-          markManualSync();
-          setGameStateForUser(user.uid, nextState)
-            .then(() => {
-              setPendingSync(false);
-              setSyncStatus('synced');
-              setTimeout(() => setSyncStatus('idle'), 2000);
-            })
-            .catch((e) => {
-              console.error('Firestore save failed', e);
-              setSyncStatus('error');
-            });
-        }
         return nextState;
       });
     },
-    [
-      user,
-      markManualSync,
-      setSyncStatus,
-      setPendingSync,
-      setGameState,
-    ]
+    [user, setGameState]
   );
 
   const stampToday = useCallback(
@@ -369,24 +304,10 @@ export function useHabitActions(
           unlockedIcons: updatedUnlockedIcons,
           coins: prev.coins + earnedCoins,
         };
-        const finalState = applyAchievements(nextState);
-        if (user) {
-          setPendingSync(true);
-          markManualSync();
-          setGameStateForUser(user.uid, finalState)
-            .then(() => setPendingSync(false))
-            .catch((e) => console.error('Firestore save failed', e));
-        }
-        return finalState;
+        return applyAchievements(nextState);
       });
     },
-    [
-      user,
-      markManualSync,
-      setPendingSync,
-      applyAchievements,
-      setGameState,
-    ]
+    [applyAchievements, setGameState]
   );
 
   const debugStampDate = useCallback(

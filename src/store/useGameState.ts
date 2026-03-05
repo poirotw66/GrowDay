@@ -62,19 +62,14 @@ export function useGameState(): {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle');
   const { user, authLoading } = useAuth();
   const gameStateRef = useRef(gameState);
-  const lastManualSyncRef = useRef<number>(0);
 
   useEffect(() => {
     gameStateRef.current = gameState;
   }, [gameState]);
 
-  function markManualSync(): void {
-    lastManualSyncRef.current = Date.now();
-  }
-
   const syncHelpers: SyncHelpers = {
     user,
-    markManualSync,
+    markManualSync: () => {},
     setSyncStatus,
     setPendingSync,
   };
@@ -273,13 +268,10 @@ export function useGameState(): {
     }
   }, [user]);
 
-  // Debounced save to Firestore when store state changes
+  // Single source of sync: any store change triggers debounced upload to Firestore
   useEffect(() => {
     if (!user || !isLoaded) return;
     const t = setTimeout(() => {
-      const timeSinceManualSync =
-        Date.now() - lastManualSyncRef.current;
-      if (timeSinceManualSync < 2000) return;
       setSyncStatus('syncing');
       setPendingSync(true);
       const state = useGameStore.getState().gameState;

@@ -1,8 +1,9 @@
 import React from 'react';
-import { Sprout, Map as MapIcon, Trophy, Settings, BarChart3, Bell, Target, Share2, MoreHorizontal, LogIn, LogOut, Cloud, CloudOff } from 'lucide-react';
+import { Sprout, Map as MapIcon, Trophy, Settings, BarChart3, Bell, Target, Share2, MoreHorizontal } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import HabitSwitcher from './HabitSwitcher';
 import SettingsDropdown from './SettingsDropdown';
+import UserMenu from './navbar/UserMenu';
 import { GameState } from '../types';
 import { useModal } from '../contexts/ModalContext';
 
@@ -65,95 +66,16 @@ export default function AppNavbar({
         </div>
 
         <div className="flex items-center gap-2 relative z-40 flex-wrap justify-end">
-          {isFirebaseEnabled &&
-            (user ? (
-              <div className="flex items-center gap-2">
-                {syncStatus !== 'idle' && (
-                  <span
-                    className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400"
-                    title={
-                      syncStatus === 'syncing'
-                        ? '同步中'
-                        : syncStatus === 'synced'
-                          ? '已同步'
-                          : '同步失敗'
-                    }
-                  >
-                    {syncStatus === 'error' ? (
-                      <CloudOff size={14} />
-                    ) : (
-                      <Cloud
-                        size={14}
-                        className={syncStatus === 'syncing' ? 'animate-pulse' : ''}
-                      />
-                    )}
-                    <span className="hidden sm:inline">
-                      {syncStatus === 'syncing'
-                        ? '同步中'
-                        : syncStatus === 'synced'
-                          ? '已同步'
-                          : syncStatus === 'error'
-                            ? '同步失敗'
-                            : ''}
-                    </span>
-                  </span>
-                )}
-                {user.photoURL && !userImageError[user.uid] ? (
-                  <img
-                    src={user.photoURL}
-                    alt={user.displayName || user.email || '用戶頭像'}
-                    className="w-8 h-8 rounded-full border-2 border-slate-200 dark:border-slate-600 object-cover"
-                    onError={() =>
-                      setUserImageError((prev) => ({ ...prev, [user.uid]: true }))
-                    }
-                  />
-                ) : (
-                  <div
-                    className="w-8 h-8 rounded-full border-2 border-slate-200 dark:border-slate-600 bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary dark:text-primary-light font-bold text-sm"
-                    aria-hidden="true"
-                  >
-                    {(user.displayName || user.email || 'U')[0].toUpperCase()}
-                  </div>
-                )}
-                <span
-                  className="hidden sm:inline text-sm font-medium text-slate-600 dark:text-slate-300 truncate max-w-[120px]"
-                  title={user.email ?? undefined}
-                >
-                  {user.email ?? user.displayName ?? ''}
-                </span>
-                <button
-                  onClick={() => signOut()}
-                  className="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors duration-200 cursor-pointer"
-                  title="登出"
-                  aria-label="登出"
-                >
-                  <LogOut size={18} />
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => {
-                  if (!isFirebaseEnabled) {
-                    console.error('Firebase is not enabled. Check browser console for details.');
-                    alert(
-                      'Firebase 未啟用。請檢查瀏覽器控制台的錯誤訊息，或訪問：' +
-                        window.location.href +
-                        '?debug-firebase'
-                    );
-                    return;
-                  }
-                  signInWithGoogle();
-                }}
-                disabled={signInLoading || !isFirebaseEnabled}
-                className="flex items-center gap-2 px-3 py-2 rounded-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors duration-200 text-sm font-medium disabled:opacity-60 disabled:pointer-events-none cursor-pointer"
-                title={!isFirebaseEnabled ? 'Firebase 未啟用' : '使用 Google 登入'}
-                aria-label="使用 Google 登入"
-              >
-                  <LogIn size={18} />
-                  {signInLoading ? '登入中…' : 'Google 登入'}
-                </button>
-            ))}
-
+          <UserMenu
+            user={user}
+            syncStatus={syncStatus}
+            isFirebaseEnabled={isFirebaseEnabled}
+            signInWithGoogle={signInWithGoogle}
+            signOut={signOut}
+            signInLoading={signInLoading}
+            userImageError={userImageError}
+            setUserImageError={setUserImageError}
+          />
           <ThemeToggle />
 
           <div className="hidden lg:flex items-center gap-2">
