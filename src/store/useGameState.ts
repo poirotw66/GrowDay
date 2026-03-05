@@ -110,11 +110,28 @@ export function useGameState(): {
           typeof localStorage !== 'undefined' &&
           localStorage.getItem(PENDING_SYNC_KEY);
         const local = localStorage.getItem(STORAGE_KEY);
+        const localParsed = local
+          ? (JSON.parse(local) as Record<string, unknown>)
+          : null;
+        const localHabits =
+          (localParsed?.habits as Record<string, Habit> | undefined) ?? {};
+        const localHasHabits = Object.keys(localHabits).length > 0;
+        const remoteObj =
+          remote && typeof remote === 'object'
+            ? (remote as Record<string, unknown>)
+            : null;
+        const remoteHabits =
+          (remoteObj?.habits as Record<string, Habit> | undefined) ?? {};
+        const remoteHasHabits = Object.keys(remoteHabits).length > 0;
 
-        if (remote && typeof remote === 'object' && !hasPendingSync) {
-          const updatedState = applyMigration(
-            remote as Record<string, unknown>
-          );
+        // Current in-memory state may already contain onboarding progress (habits created
+        // before the user signed in). We treat that as authoritative when remote/local
+        // do not clearly have their own habits yet, to avoid wiping the just-created habit.
+        const currentState = useGameStore.getState().gameState;
+        const currentHasHabits = Object.keys(currentState.habits).length > 0;
+
+        if (remoteObj && !hasPendingSync && remoteHasHabits) {
+          const updatedState = applyMigration(remoteObj);
           if (
             isStorageAvailable() &&
             updatedState.customStamps
@@ -138,9 +155,31 @@ export function useGameState(): {
             setSyncStatus('synced');
             setTimeout(() => setSyncStatus('idle'), 2000);
           }
-        } else if (hasPendingSync && local) {
-          const parsed = JSON.parse(local) as Record<string, unknown>;
-          const updated = applyMigration(parsed);
+        } else if (currentHasHabits) {
+          const stateWithOnboard: GameState = {
+            ...currentState,
+            isOnboarded:
+              Object.keys(currentState.habits).length > 0
+                ? true
+                : currentState.isOnboarded,
+          };
+          setGameState(stateWithOnboard);
+          if (!cancelled) {
+            if (typeof localStorage !== 'undefined') {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(stateWithOnboard));
+            }
+            await setGameStateForUser(user.uid, stateWithOnboard);
+            if (!cancelled) {
+              setPendingSync(false);
+              setSyncStatus('synced');
+              setTimeout(() => setSyncStatus('idle'), 2000);
+            }
+          }
+        } else if (localParsed && localHasHabits) {
+          // Prefer local progress when it clearly has habits but remote does not.
+          // This avoids wiping onboarding progress when the user signs in for the first time
+          // with an account that has an empty or outdated cloud save.
+          const updated = applyMigration(localParsed);
           if (isStorageAvailable() && updated.customStamps) {
             const migratedStamps = await migrateStampsToFirebase(
               updated.customStamps,
@@ -159,13 +198,11 @@ export function useGameState(): {
           }
         } else if (
           hasPendingSync &&
+          hasPendingSync &&
           !local &&
-          remote &&
-          typeof remote === 'object'
+          remoteObj
         ) {
-          const updatedState = applyMigration(
-            remote as Record<string, unknown>
-          );
+          const updatedState = applyMigration(remoteObj);
           if (
             isStorageAvailable() &&
             updatedState.customStamps
@@ -190,9 +227,8 @@ export function useGameState(): {
             setSyncStatus('synced');
             setTimeout(() => setSyncStatus('idle'), 2000);
           }
-        } else if (local) {
-          const parsed = JSON.parse(local) as Record<string, unknown>;
-          const updated = applyMigration(parsed);
+        } else if (localParsed) {
+          const updated = applyMigration(localParsed);
           if (isStorageAvailable() && updated.customStamps) {
             const migratedStamps = await migrateStampsToFirebase(
               updated.customStamps,
@@ -208,10 +244,8 @@ export function useGameState(): {
               setTimeout(() => setSyncStatus('idle'), 2000);
             }
           }
-        } else if (remote && typeof remote === 'object') {
-          const updatedState = applyMigration(
-            remote as Record<string, unknown>
-          );
+        } else if (remoteObj) {
+          const updatedState = applyMigration(remoteObj);
           if (
             isStorageAvailable() &&
             updatedState.customStamps

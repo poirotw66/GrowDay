@@ -50,11 +50,12 @@ export const INITIAL_STATE: GameState = {
 export function applyMigration(parsed: Record<string, unknown>): GameState {
   const today = getTodayString();
   const updatedHabits = { ...(parsed.habits as Record<string, Habit>) };
+  const habitIds = Object.keys(updatedHabits);
   let loadedUnlockedIcons =
     (parsed.unlockedIcons as string[]) || getDefaultUnlockedIcons();
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
-  Object.keys(updatedHabits).forEach((key) => {
+  habitIds.forEach((key) => {
     const habit = updatedHabits[key];
     habit.currentStreak = calculateStreak(habit.logs, today);
     if (!habit.stampColor) habit.stampColor = DEFAULT_STAMP_COLOR;
@@ -70,11 +71,17 @@ export function applyMigration(parsed: Record<string, unknown>): GameState {
       monthlyCount
     );
   });
+  const parsedIsOnboarded = (parsed.isOnboarded as boolean | undefined) ?? false;
+
   return {
     ...INITIAL_STATE,
     ...parsed,
     habits: updatedHabits,
     unlockedIcons: loadedUnlockedIcons,
+    // If there is at least one habit in the save, we always consider onboarding complete.
+    // This fixes older saves (or remote data) that never set isOnboarded but already have habits,
+    // which would otherwise cause the app to show the onboarding flow again after login.
+    isOnboarded: habitIds.length > 0 ? true : parsedIsOnboarded,
     world: (parsed.world as GameState['world'])
       ? { ...INITIAL_STATE.world, ...(parsed.world as object) }
       : INITIAL_STATE.world,
