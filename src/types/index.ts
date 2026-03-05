@@ -10,7 +10,13 @@ export type { GoalPeriod, Goal, CompletedGoal } from './goal';
 export type { DecorationType, DecorationItem, PlacedItem, PlacedPet, AreaConfig, WorldState } from './world';
 export type { CustomStamp } from './stamp';
 
-export type CalendarStyle = 'minimal' | 'handdrawn' | 'cny' | 'japanese' | 'american';
+export type CalendarStyle =
+  | 'minimal'
+  | 'handdrawn'
+  | 'cny'
+  | 'japanese'
+  | 'american'
+  | 'idol_magazine';
 
 import type { Habit, RetiredPet } from './habit';
 import type { Goal, CompletedGoal } from './goal';

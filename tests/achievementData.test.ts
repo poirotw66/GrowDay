@@ -16,7 +16,7 @@ const createMockState = (overrides: Partial<GameState> = {}): GameState => ({
     areas: {},
   },
   retiredPets: [],
-  calendarStyle: 'handdrawn',
+  calendarStyle: 'idol_magazine',
   selectedSound: 'thud',
   unlockedAchievements: [],
   ...overrides,

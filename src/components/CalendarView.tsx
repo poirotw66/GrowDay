@@ -5,6 +5,7 @@ import { Habit, CalendarStyle, GameState } from '../types';
 import { STAMP_ICONS, DEFAULT_STAMP_COLOR } from '../utils/stampIcons';
 import { ChevronLeft, ChevronRight, CheckCircle2, Star } from 'lucide-react';
 import { getTheme, getMonthlyProps, getHandDrawnBorderStyle } from '../theme/calendarThemes';
+import { getHabitMonthlyCount } from '../utils/habitHelpers';
 import DailyStampModal from './DailyStampModal';
 
 interface Props {
@@ -71,6 +72,10 @@ const CalendarView: React.FC<Props> = memo(function CalendarView({ habit, onStam
   const currentMonthProps = getMonthlyProps(month);
   const theme = getTheme(style as CalendarStyle, month);
   const handDrawnStyle = style === 'handdrawn' ? getHandDrawnBorderStyle() : {};
+  const monthlyCount = useMemo(
+    () => getHabitMonthlyCount(habit, year, month),
+    [habit, year, month]
+  );
 
   return (
     <div className="flex flex-col relative w-full">
@@ -105,6 +110,70 @@ const CalendarView: React.FC<Props> = memo(function CalendarView({ habit, onStam
         style={handDrawnStyle}
       >
         {theme.decor}
+
+        {/* Idol magazine hero header */}
+        {style === 'idol_magazine' && (
+          <div className="mb-4 grid grid-cols-1 md:grid-cols-[2.2fr,3fr] gap-3 md:gap-4 items-stretch relative z-10">
+            {/* Left: Idol cover visual using default image */}
+            <div className="relative overflow-hidden rounded-2xl shadow-lg border border-slate-900/40 bg-slate-900 aspect-[3/2]">
+              <img
+                src="/image/201012-14709-2-M862O.jpg"
+                alt="Idol cover"
+                className="absolute inset-0 w-full h-full object-cover object-top"
+              />
+              {/* Soft bottom-only gradient to keep full image visible */}
+              <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-slate-900/85 via-slate-900/40 to-transparent" />
+              <div className="p-4 flex items-end justify-between w-full h-full relative z-10">
+                <div>
+                  <div className="text-[10px] font-semibold tracking-[0.2em] uppercase text-slate-300/80 mb-1">
+                    GrowDay Monthly
+                  </div>
+                  <div className="text-lg md:text-xl font-bold text-slate-50 leading-tight">
+                    {habit.name}
+                  </div>
+                  <div className="mt-1 text-[11px] text-slate-300/80">
+                    {displayDate.toLocaleDateString('zh-TW', {
+                      year: 'numeric',
+                      month: 'long',
+                    })}
+                  </div>
+                </div>
+                <div className="flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-xl bg-slate-900/60 border border-slate-500/60 shadow-md">
+                  <StampIcon size={28} className="text-slate-100" />
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-white/90 border border-slate-100 shadow-sm px-4 py-3 flex flex-col justify-between">
+              <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
+                <span className="font-semibold tracking-[0.18em] uppercase">
+                  Today Focus
+                </span>
+                <span className="text-[10px]">
+                  連續 {habit.currentStreak} 天 · 最長 {habit.longestStreak} 天
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-2xl font-black text-slate-900 leading-none">
+                    {monthlyCount}
+                  </div>
+                  <div className="text-[11px] text-slate-500 mt-1">
+                    本月打卡次數
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-1 text-[11px] text-slate-500">
+                  <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-semibold">
+                    今日{isTodayStamped ? '已完成' : '待打卡'}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-slate-50 text-slate-500">
+                    印章色：<span className="inline-block w-2 h-2 rounded-full align-middle" style={{ backgroundColor: stampColor }} />
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Calendar Header */}
         <div className="flex items-center justify-between mb-3 md:mb-4 px-2 relative z-10 pt-2 md:pt-4 flex-shrink-0">
@@ -167,7 +236,21 @@ const CalendarView: React.FC<Props> = memo(function CalendarView({ habit, onStam
                         ...minimalTodayStyle,
                         ...(style === 'handdrawn' ? {
                             borderRadius: isToday ? '30% 70% 70% 30% / 30% 30% 70% 70%' : '12px',
-                        } : {})
+                        } : {}),
+                        ...(style === 'idol_magazine' && isStamped
+                          ? {
+                              backgroundImage:
+                                'linear-gradient(145deg, rgba(15,23,42,0.06), rgba(148,163,184,0.08))',
+                              boxShadow:
+                                '0 10px 25px rgba(15,23,42,0.18)',
+                              borderRadius: '18px',
+                            }
+                          : style === 'idol_magazine'
+                          ? {
+                              backgroundColor: '#f9fafb',
+                              borderRadius: '18px',
+                            }
+                          : {})
                     }}
                 >
                     {style === 'handdrawn' && !isStamped && !isToday && (

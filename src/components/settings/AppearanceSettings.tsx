@@ -12,6 +12,7 @@ const CALENDAR_STYLES: { id: CalendarStyle; label: string }[] = [
   { id: 'cny', label: '新春禮節' },
   { id: 'japanese', label: '日式和風' },
   { id: 'american', label: '美式日記' },
+  { id: 'idol_magazine', label: '雜誌版偶像年曆' },
 ];
 
 export default function AppearanceSettings() {

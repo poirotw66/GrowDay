@@ -39,7 +39,7 @@ export const INITIAL_STATE: GameState = {
     areas: JSON.parse(JSON.stringify(INITIAL_AREAS)),
   },
   retiredPets: [],
-  calendarStyle: 'handdrawn',
+  calendarStyle: 'idol_magazine',
   selectedSound: 'thud',
   unlockedAchievements: [],
 };
@@ -86,7 +86,7 @@ export function applyMigration(parsed: Record<string, unknown>): GameState {
       ? { ...INITIAL_STATE.world, ...(parsed.world as object) }
       : INITIAL_STATE.world,
     retiredPets: (parsed.retiredPets as RetiredPet[]) || [],
-    calendarStyle: (parsed.calendarStyle as CalendarStyle) || 'handdrawn',
+    calendarStyle: (parsed.calendarStyle as CalendarStyle) || 'idol_magazine',
     selectedSound: (parsed.selectedSound as string) || 'thud',
     unlockedAchievements: (parsed.unlockedAchievements as string[]) || [],
   } as GameState;

@@ -56,6 +56,8 @@ export function getContainerClass(style: CalendarStyle): string {
   switch (style) {
     case 'minimal':
       return 'bg-white rounded-3xl shadow-sm border border-slate-100';
+    case 'idol_magazine':
+      return 'bg-[#fdfcf9] rounded-[2rem] shadow-xl border border-slate-100/80';
     case 'cny':
       return 'bg-red-50 rounded-3xl border-4 border-red-800 shadow-xl';
     case 'japanese':
@@ -258,6 +260,55 @@ export function getTheme(style: CalendarStyle, month: number): CalendarThemeConf
                 backgroundSize: '16px 16px',
               }}
             />
+          </>
+        ),
+      };
+    }
+
+    case 'idol_magazine': {
+      const accent = currentMonthProps.color;
+      return {
+        container:
+          'bg-[#fdfcf9] rounded-[2rem] shadow-xl border border-slate-100/80 relative overflow-hidden',
+        headerText: 'text-slate-900 font-black tracking-tight',
+        headerSub: 'text-slate-400 text-xs font-semibold uppercase',
+        grid: 'gap-3 md:gap-3',
+        dayCell:
+          'rounded-2xl bg-white/80 border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all',
+        todayCell: '',
+        emptyCell: 'border border-dashed border-slate-100 rounded-2xl',
+        button:
+          'rounded-xl bg-slate-900 text-white font-semibold tracking-wide shadow-lg hover:shadow-xl',
+        buttonStyle: {},
+        decor: (
+          <>
+            <div
+              className="absolute inset-0 pointer-events-none opacity-[0.12]"
+              style={{
+                backgroundImage:
+                  'linear-gradient(120deg, rgba(148,163,184,0.18) 1px, transparent 1px), linear-gradient(210deg, rgba(148,163,184,0.12) 1px, transparent 1px)',
+                backgroundSize: '32px 32px',
+              }}
+            />
+            <div
+              className="absolute -top-10 -left-8 w-40 h-32 rotate-[-6deg] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-600 shadow-2xl"
+              style={{
+                clipPath:
+                  'polygon(5% 0, 95% 3%, 100% 90%, 95% 100%, 10% 97%, 0 80%)',
+              }}
+            >
+              <div className="absolute bottom-3 left-4 text-xs font-semibold tracking-[0.2em] text-slate-200 uppercase">
+                Monthly Issue
+              </div>
+              <div className="absolute top-4 left-4 text-[10px] font-medium text-slate-300/70 uppercase">
+                GrowDay
+              </div>
+            </div>
+            <div
+              className="absolute top-8 right-6 w-20 h-20 rounded-2xl bg-gradient-to-br from-white to-slate-100 shadow-xl border border-white/70 flex items-center justify-center"
+            >
+              <DoodleIcon size={40} color={accent} />
+            </div>
           </>
         ),
       };
