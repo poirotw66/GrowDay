@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { getTodayString, getCalendarDays, formatMonthYear } from '../utils/dateUtils';
+import { getTodayString, getCalendarDays, formatMonthYear } from '../src/utils/dateUtils';
 
 describe('dateUtils', () => {
   describe('getTodayString', () => {

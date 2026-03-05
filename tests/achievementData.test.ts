@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { ACHIEVEMENTS } from '../utils/achievementData';
-import { GameState, Habit, RetiredPet } from '../types';
+import { ACHIEVEMENTS } from '../src/utils/achievementData';
+import { GameState, Habit, RetiredPet } from '../src/types';
 
 // Helper to create a minimal game state for testing
 const createMockState = (overrides: Partial<GameState> = {}): GameState => ({

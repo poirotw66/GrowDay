@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { calculateLevel, calculateStreak, getStageConfig, STAGE_THRESHOLDS } from '../utils/gameLogic';
-import { PetStage, DayLog } from '../types';
+import { calculateLevel, calculateStreak, getStageConfig, STAGE_THRESHOLDS } from '../src/utils/gameLogic';
+import { PetStage, DayLog } from '../src/types';
 
 describe('gameLogic', () => {
   describe('calculateLevel', () => {
