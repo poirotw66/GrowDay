@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useCallback, memo } from 'react';
+import React, { useState, useCallback, memo } from 'react';
 import { Bell, BellOff, Clock, X, Check, AlertCircle } from 'lucide-react';
 import {
-  isNotificationSupported,
   getNotificationPermission,
   requestNotificationPermission,
   getReminderSettings,
   saveReminderSettings,
   sendDailyReminder,
   ReminderSettings as ReminderSettingsType,
+  type NotificationPermissionStatus,
 } from '../utils/notifications';
 
 interface Props {
@@ -17,13 +17,9 @@ interface Props {
 
 const ReminderSettingsComponent: React.FC<Props> = memo(function ReminderSettingsComponent({ habitName, onClose }) {
   const [settings, setSettings] = useState<ReminderSettingsType>(() => getReminderSettings());
-  const [permissionStatus, setPermissionStatus] = useState<NotificationPermission | 'unsupported'>('default');
+  const [permissionStatus, setPermissionStatus] = useState<NotificationPermissionStatus>(() => getNotificationPermission());
   const [isRequesting, setIsRequesting] = useState(false);
   const [testSent, setTestSent] = useState(false);
-
-  useEffect(() => {
-    setPermissionStatus(getNotificationPermission());
-  }, []);
 
   const handleRequestPermission = useCallback(async () => {
     setIsRequesting(true);

@@ -343,7 +343,7 @@ const CalendarView: React.FC<Props> = memo(function CalendarView({ habit, onStam
             
             const dayIconId = log?.icon || habit.stampIcon;
             const dayColor = log?.color || stampColor;
-            const isCustomStamp = dayIconId.startsWith('custom:');
+            const _isCustomStamp = dayIconId.startsWith('custom:');
             
             const posX = log?.position?.x ?? 50;
             const posY = log?.position?.y ?? 50;

@@ -6,6 +6,16 @@ export interface ReminderSettings {
   habitId?: string; // Optional: specific habit to remind, null = all
 }
 
+/** Permission status from Notification API or unsupported */
+export type NotificationPermissionStatus = 'granted' | 'denied' | 'default' | 'unsupported';
+
+/** Options for showNotification (subset of Notification API) */
+export interface NotificationShowOptions {
+  body?: string;
+  tag?: string;
+  requireInteraction?: boolean;
+}
+
 const STORAGE_KEY = 'growday_reminder_settings';
 
 // Check if notifications are supported
@@ -14,9 +24,9 @@ export function isNotificationSupported(): boolean {
 }
 
 // Check current permission status
-export function getNotificationPermission(): NotificationPermission | 'unsupported' {
+export function getNotificationPermission(): NotificationPermissionStatus {
   if (!isNotificationSupported()) return 'unsupported';
-  return Notification.permission;
+  return Notification.permission as NotificationPermissionStatus;
 }
 
 // Request notification permission
@@ -54,13 +64,13 @@ export function saveReminderSettings(settings: ReminderSettings): void {
 
 // Show a notification
 export function showNotification(
-  title: string, 
-  options?: NotificationOptions
+  title: string,
+  options?: NotificationShowOptions
 ): Notification | null {
   if (!isNotificationSupported() || Notification.permission !== 'granted') {
     return null;
   }
-  
+
   return new Notification(title, {
     icon: '/icons/icon-192x192.png',
     badge: '/icons/icon-192x192.png',

@@ -45,8 +45,9 @@ if (typeof window !== 'undefined') {
   const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   const debugEnabled = new URLSearchParams(window.location.search).has('debug-firebase');
   
-  // Always log in production, or if debug-firebase is in URL
+  // Always log in production, or if debug-firebase is in URL (intentional debug output)
   if (!isDev || debugEnabled) {
+    /* eslint-disable no-console */
     console.group('🔥 Firebase Configuration Status');
     console.log('Environment:', isDev ? 'Development' : 'Production');
     console.log('API Key:', firebaseConfig.apiKey ? `✅ Set (${firebaseConfig.apiKey.substring(0, 10)}...)` : '❌ Missing');
@@ -72,6 +73,7 @@ if (typeof window !== 'undefined') {
       console.error('3. Add ?debug-firebase to URL for more info');
     }
     console.groupEnd();
+    /* eslint-enable no-console */
   }
 }
 

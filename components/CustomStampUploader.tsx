@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { X, Upload, Image as ImageIcon, Loader2, Check, Cloud } from 'lucide-react';
+import { X, Upload, Loader2, Check, Cloud } from 'lucide-react';
 import { CustomStamp } from '../types';
 import { processImage, validateImageFile, formatFileSize, generateUUID } from '../utils/imageProcessor';
 import { uploadCustomStampToStorage, isStorageAvailable } from '../utils/firebaseStorage';
@@ -36,6 +36,24 @@ const CustomStampUploader: React.FC<CustomStampUploaderProps> = ({
   const existingCount = Object.keys(existingStamps).length;
   const canUpload = existingCount < MAX_CUSTOM_STAMPS;
 
+  const handleFileSelect = useCallback((file: File) => {
+    setError(null);
+    setSelectedFile(file);
+
+    const validation = validateImageFile(file);
+    if (!validation.valid) {
+      setError(validation.error || '檔案驗證失敗');
+      setSelectedFile(null);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setPreview(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  }, []);
+
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -60,7 +78,7 @@ const CustomStampUploader: React.FC<CustomStampUploaderProps> = ({
     if (files && files.length > 0) {
       handleFileSelect(files[0]);
     }
-  }, [canUpload]);
+  }, [canUpload, handleFileSelect]);
 
   const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (!canUpload) {
@@ -72,27 +90,7 @@ const CustomStampUploader: React.FC<CustomStampUploaderProps> = ({
     if (files && files.length > 0) {
       handleFileSelect(files[0]);
     }
-  }, [canUpload]);
-
-  const handleFileSelect = async (file: File) => {
-    setError(null);
-    setSelectedFile(file);
-
-    // Validate file
-    const validation = validateImageFile(file);
-    if (!validation.valid) {
-      setError(validation.error || '檔案驗證失敗');
-      setSelectedFile(null);
-      return;
-    }
-
-    // Create preview
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setPreview(e.target?.result as string);
-    };
-    reader.readAsDataURL(file);
-  };
+  }, [canUpload, handleFileSelect]);
 
   const handleUpload = async () => {
     if (!selectedFile || !preview) return;

@@ -1,45 +1,20 @@
 import React, { useState } from 'react';
-import { GameState, Habit, CalendarStyle, CustomStamp } from '../types';
+import { CalendarStyle, CustomStamp } from '../types';
 import { STAMP_OPTIONS, STAMP_COLORS } from '../utils/stampIcons';
 import { SOUND_OPTIONS, playStampSound } from '../utils/audio';
 import { 
-  RefreshCw, FlaskConical, Check, CalendarRange, 
-  Stamp, Lock, Medal, Palette, ChevronRight, Volume2, 
+  FlaskConical, Check, CalendarRange, 
+  Stamp, Lock, Medal, Palette, ChevronRight, 
   Download, Upload, User, Pencil, Trash2, ImagePlus, X as XIcon,
-  Settings2, Sparkles, Database, AlertTriangle, Cloud, Eye, RefreshCcw
+  Settings2, Sparkles, Database, AlertTriangle, Cloud, Eye
 } from 'lucide-react';
 import CustomStampUploader from './CustomStampUploader';
 import { getGameStateForUser, setGameStateForUser } from '../firebase';
+import { useSettings } from '../contexts/SettingsContext';
 
 interface SettingsDropdownProps {
   isOpen: boolean;
   onClose: () => void;
-  gameState: GameState;
-  activeHabit: Habit;
-  onExportData: () => void;
-  onImportClick: () => void;
-  onShowHallOfFame: () => void;
-  onResetProgress: () => void;
-  updateStampStyle: (icon: string, color: string) => void;
-  setCalendarStyle: (style: CalendarStyle) => void;
-  setSoundEffect: (soundId: string) => void;
-  updatePetNickname: (habitId: string, petNickname: string) => void;
-  renameHabit: (habitId: string, newName: string) => void;
-  deleteHabit: (habitId: string) => void;
-  onCloseSettings: () => void;
-  isFirebaseEnabled?: boolean;
-  userId?: string | null;
-  onAddCustomStamp?: (stamp: CustomStamp) => void;
-  onDeleteCustomStamp?: (stampId: string) => void;
-  // Debug props
-  debugDate: string;
-  setDebugDate: (date: string) => void;
-  debugStartDate: string;
-  setDebugStartDate: (date: string) => void;
-  debugEndDate: string;
-  setDebugEndDate: (date: string) => void;
-  onDebugStamp: (e: React.FormEvent) => void;
-  onDebugRangeStamp: (e: React.FormEvent) => void;
 }
 
 const CALENDAR_STYLES: { id: CalendarStyle; label: string }[] = [
@@ -98,32 +73,34 @@ const CollapsibleSection: React.FC<{
 const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
   isOpen,
   onClose: _onClose,
-  gameState,
-  activeHabit,
-  onExportData,
-  onImportClick,
-  onShowHallOfFame,
-  onResetProgress,
-  updateStampStyle,
-  setCalendarStyle,
-  setSoundEffect,
-  updatePetNickname,
-  renameHabit,
-  deleteHabit,
-  onCloseSettings,
-  isFirebaseEnabled = false,
-  userId = null,
-  onAddCustomStamp,
-  onDeleteCustomStamp,
-  debugDate,
-  setDebugDate,
-  debugStartDate,
-  setDebugStartDate,
-  debugEndDate,
-  setDebugEndDate,
-  onDebugStamp,
-  onDebugRangeStamp,
 }) => {
+  const {
+    gameState,
+    activeHabit,
+    onExportData,
+    onImportClick,
+    onShowHallOfFame,
+    onResetProgress,
+    updateStampStyle,
+    setCalendarStyle,
+    setSoundEffect,
+    updatePetNickname,
+    renameHabit,
+    deleteHabit,
+    onCloseSettings,
+    isFirebaseEnabled = false,
+    userId = null,
+    onAddCustomStamp,
+    onDeleteCustomStamp,
+    debugDate,
+    setDebugDate,
+    debugStartDate,
+    setDebugStartDate,
+    debugEndDate,
+    setDebugEndDate,
+    onDebugStamp,
+    onDebugRangeStamp,
+  } = useSettings();
   // State management - grouped by section
   const [showHabitSettings, setShowHabitSettings] = useState(false);
   const [showStampStyle, setShowStampStyle] = useState(false);

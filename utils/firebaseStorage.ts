@@ -7,7 +7,7 @@ import { storage, isFirebaseEnabled } from '../firebase';
 import { ref, uploadBytes, getDownloadURL, deleteObject, type UploadResult } from 'firebase/storage';
 import { CustomStamp } from '../types';
 
-const STAMPS_PATH = 'users/{userId}/stamps/{stampId}';
+const _STAMPS_PATH = 'users/{userId}/stamps/{stampId}';
 
 /**
  * Upload image file to Firebase Storage
