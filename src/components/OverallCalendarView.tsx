@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { getCalendarDays, getTodayString } from '../utils/dateUtils';
 import { Habit, CalendarStyle } from '../types';
+import { getContainerClass, getSeasonalColor, getHandDrawnContainerStyle } from '../theme/calendarThemes';
 import { ChevronLeft, ChevronRight, Circle, Hexagon, Sun, BookOpen, Star } from 'lucide-react';
 
 interface Props {
@@ -50,28 +51,9 @@ const OverallCalendarView: React.FC<Props> = ({ habits, style = 'handdrawn' }) =
     return (hash % 30) - 15;
   };
 
-  // Helper for seasonal colors (Simplified version of CalendarView)
-  const getSeasonalColor = (m: number) => {
-      const colors = ['#3b82f6', '#ec4899', '#22c55e', '#a855f7', '#eab308', '#f97316', '#06b6d4', '#10b981', '#d97706', '#f59e0b', '#94a3b8', '#ef4444'];
-      return colors[m % 12];
-  };
   const accentColor = getSeasonalColor(month);
-
-  const getContainerClass = () => {
-    switch(style) {
-        case 'minimal': return 'bg-white rounded-3xl shadow-sm border border-slate-100';
-        case 'cny': return 'bg-red-50 rounded-3xl border-4 border-red-800 shadow-xl';
-        case 'japanese': return 'bg-[#f4f1ea] rounded-xl shadow-md border border-[#d4d1ca]';
-        case 'american': return 'bg-white border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-none';
-        case 'handdrawn': default: return 'bg-[#fdfbf7] border-2 border-slate-800/5 shadow-md';
-    }
-  };
-
-  const getHandDrawnStyle = () => style === 'handdrawn' ? ({
-    borderRadius: '255px 15px 225px 15px / 15px 225px 15px 255px',
-    backgroundImage: 'radial-gradient(#e5e7eb 1px, transparent 1px)',
-    backgroundSize: '20px 20px',
-  }) : {};
+  const containerClass = getContainerClass(style);
+  const handDrawnStyle = style === 'handdrawn' ? getHandDrawnContainerStyle() : {};
 
   return (
     <div className="flex flex-col relative w-full">
@@ -106,8 +88,8 @@ const OverallCalendarView: React.FC<Props> = ({ habits, style = 'handdrawn' }) =
       )}
 
       <div 
-        className={`flex flex-col p-4 md:p-5 lg:p-6 relative transition-colors duration-300 ${getContainerClass()}`}
-        style={getHandDrawnStyle()}
+        className={`flex flex-col p-4 md:p-5 lg:p-6 relative transition-colors duration-300 ${containerClass}`}
+        style={handDrawnStyle}
       >
       
         {/* Header */}

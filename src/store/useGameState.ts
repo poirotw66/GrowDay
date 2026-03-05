@@ -1,90 +1,33 @@
+/**
+ * Core game state and persistence. Uses Zustand store (localStorage via persist);
+ * Firestore sync runs here as a subscriber to auth + store.
+ */
 import { useState, useEffect, useRef } from 'react';
-import {
-  GameState,
-  Habit,
-  PetColor,
-  RetiredPet,
-  CalendarStyle,
-} from '../types';
-import { calculateStreak } from '../utils/gameLogic';
-import { getTodayString } from '../utils/dateUtils';
-import { assignRandomPet } from '../utils/petData';
-import { getDefaultUnlockedIcons, DEFAULT_STAMP_COLOR } from '../utils/stampIcons';
-import { INITIAL_AREAS } from '../utils/worldData';
-import { getHabitMonthlyCount, checkUnlockableIcons } from '../utils/habitHelpers';
+import type { GameState, Habit } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { getGameStateForUser, setGameStateForUser } from '../firebase';
 import {
   migrateStampsToFirebase,
   isStorageAvailable,
 } from '../utils/firebaseStorage';
-
-const STORAGE_KEY = 'growday_save_v2';
-const OLD_STORAGE_KEY = 'growday_save_v1';
-const PENDING_SYNC_KEY = 'growday_pending_sync';
+import {
+  STORAGE_KEY,
+  OLD_STORAGE_KEY,
+  PENDING_SYNC_KEY,
+  applyMigration,
+  INITIAL_STATE,
+  migrateV1ToV2,
+} from './gameStateInit';
+import {
+  useGameStore,
+  useRehydrationStore,
+  selectGameState,
+  selectSetGameState,
+} from './gameStateStore';
 
 export function setPendingSync(pending: boolean): void {
   if (pending) localStorage.setItem(PENDING_SYNC_KEY, '1');
   else localStorage.removeItem(PENDING_SYNC_KEY);
-}
-
-export const INITIAL_STATE: GameState = {
-  habits: {},
-  activeHabitId: null,
-  unlockedPets: [],
-  unlockedIcons: getDefaultUnlockedIcons(),
-  isOnboarded: false,
-  coins: 0,
-  inventory: [],
-  world: {
-    unlockedAreas: ['home'],
-    areas: JSON.parse(JSON.stringify(INITIAL_AREAS)),
-  },
-  retiredPets: [],
-  calendarStyle: 'handdrawn',
-  selectedSound: 'thud',
-  unlockedAchievements: [],
-};
-
-/**
- * Apply migration and recalc to parsed state (shared by localStorage and Firestore).
- */
-export function applyMigration(parsed: Record<string, unknown>): GameState {
-  const today = getTodayString();
-  const updatedHabits = { ...(parsed.habits as Record<string, Habit>) };
-  let loadedUnlockedIcons =
-    (parsed.unlockedIcons as string[]) || getDefaultUnlockedIcons();
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
-  Object.keys(updatedHabits).forEach((key) => {
-    const habit = updatedHabits[key];
-    habit.currentStreak = calculateStreak(habit.logs, today);
-    if (!habit.stampColor) habit.stampColor = DEFAULT_STAMP_COLOR;
-    if (typeof habit.generation !== 'number') habit.generation = 1;
-    const monthlyCount = getHabitMonthlyCount(
-      habit,
-      currentYear,
-      currentMonth
-    );
-    loadedUnlockedIcons = checkUnlockableIcons(
-      habit,
-      loadedUnlockedIcons,
-      monthlyCount
-    );
-  });
-  return {
-    ...INITIAL_STATE,
-    ...parsed,
-    habits: updatedHabits,
-    unlockedIcons: loadedUnlockedIcons,
-    world: (parsed.world as GameState['world'])
-      ? { ...INITIAL_STATE.world, ...(parsed.world as object) }
-      : INITIAL_STATE.world,
-    retiredPets: (parsed.retiredPets as RetiredPet[]) || [],
-    calendarStyle: (parsed.calendarStyle as CalendarStyle) || 'handdrawn',
-    selectedSound: (parsed.selectedSound as string) || 'thud',
-    unlockedAchievements: (parsed.unlockedAchievements as string[]) || [],
-  } as GameState;
 }
 
 export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error';
@@ -96,20 +39,25 @@ export interface SyncHelpers {
   setPendingSync: (pending: boolean) => void;
 }
 
+export { INITIAL_STATE, applyMigration, STORAGE_KEY, OLD_STORAGE_KEY };
+
 /**
- * Core game state and persistence (localStorage + Firestore).
- * Exposes syncHelpers for action hooks that perform immediate Firestore sync.
+ * Hook: game state from Zustand store (persisted to localStorage).
+ * Firestore sync is handled here; components can use useGameStore(selector) for fine-grained re-renders.
  */
 export function useGameState(): {
   gameState: GameState;
-  setGameState: React.Dispatch<React.SetStateAction<GameState>>;
+  setGameState: (next: GameState | ((prev: GameState) => GameState)) => void;
   activeHabit: Habit | null;
   isLoaded: boolean;
   syncStatus: SyncStatus;
   syncHelpers: SyncHelpers;
   gameStateRef: React.MutableRefObject<GameState>;
 } {
-  const [gameState, setGameState] = useState<GameState>(INITIAL_STATE);
+  const gameState = useGameStore(selectGameState);
+  const setGameState = useGameStore(selectSetGameState);
+  const rehydrated = useRehydrationStore((s) => s.rehydrated);
+
   const [isLoaded, setIsLoaded] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle');
   const { user, authLoading } = useAuth();
@@ -131,62 +79,28 @@ export function useGameState(): {
     setPendingSync,
   };
 
-  // Load from localStorage on mount when not waiting for auth or when no user
+  // When no user: after rehydration, run V1 migration if needed and mark loaded
   useEffect(() => {
-    if (authLoading) return;
-    if (user) return;
-
-    const savedV2 = localStorage.getItem(STORAGE_KEY);
-    if (savedV2) {
-      try {
-        const parsed = JSON.parse(savedV2) as Record<string, unknown>;
-        const updatedState = applyMigration(parsed);
-        setGameState(updatedState);
-        setIsLoaded(true);
-        return;
-      } catch (e) {
-        console.error('Failed to load V2 save', e);
-      }
+    if (authLoading || user || !rehydrated) return;
+    const state = useGameStore.getState().gameState;
+    const hasV2 = Object.keys(state.habits).length > 0 || state.isOnboarded;
+    if (hasV2) {
+      setIsLoaded(true);
+      return;
     }
-
     const savedV1 = localStorage.getItem(OLD_STORAGE_KEY);
     if (savedV1) {
       try {
-        const parsedV1 = JSON.parse(savedV1);
-        const newId = 'habit_' + Date.now();
-        const defaultColor: PetColor = 'green';
-        const assignedPet = assignRandomPet(defaultColor);
-        const migratedHabit: Habit = {
-          id: newId,
-          name: parsedV1.habitName || '我的習慣',
-          stampIcon: parsedV1.stampIcon || 'star',
-          stampColor: DEFAULT_STAMP_COLOR,
-          petColor: defaultColor,
-          petId: assignedPet,
-          startDate: parsedV1.startDate || getTodayString(),
-          logs: parsedV1.logs || {},
-          totalExp: parsedV1.totalExp || 0,
-          currentLevel: parsedV1.currentLevel || 1,
-          currentStreak: parsedV1.currentStreak || 0,
-          longestStreak: parsedV1.longestStreak || 0,
-          generation: 1,
-        };
-        const newState: GameState = {
-          ...INITIAL_STATE,
-          habits: { [newId]: migratedHabit },
-          activeHabitId: newId,
-          unlockedPets: [assignedPet],
-          isOnboarded: true,
-        };
-        setGameState(newState);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
+        const parsedV1 = JSON.parse(savedV1) as Record<string, unknown>;
+        const migrated = migrateV1ToV2(parsedV1);
+        setGameState(migrated);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
       } catch (e) {
         console.error('Failed to migrate V1 save', e);
       }
     }
-
     setIsLoaded(true);
-  }, [authLoading, user]);
+  }, [authLoading, user, rehydrated, setGameState]);
 
   // When user is set: load from Firestore or upload local state
   useEffect(() => {
@@ -359,14 +273,7 @@ export function useGameState(): {
     }
   }, [user]);
 
-  // Save to localStorage whenever state changes
-  useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
-    }
-  }, [gameState, isLoaded]);
-
-  // Debounced save to Firestore
+  // Debounced save to Firestore when store state changes
   useEffect(() => {
     if (!user || !isLoaded) return;
     const t = setTimeout(() => {
@@ -375,7 +282,8 @@ export function useGameState(): {
       if (timeSinceManualSync < 2000) return;
       setSyncStatus('syncing');
       setPendingSync(true);
-      setGameStateForUser(user.uid, gameStateRef.current)
+      const state = useGameStore.getState().gameState;
+      setGameStateForUser(user.uid, state)
         .then(() => {
           setPendingSync(false);
           setSyncStatus('synced');
@@ -404,5 +312,3 @@ export function useGameState(): {
     gameStateRef,
   };
 }
-
-export { STORAGE_KEY, OLD_STORAGE_KEY };

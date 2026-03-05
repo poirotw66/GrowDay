@@ -175,11 +175,6 @@ export function useHabitActions(
           activeHabitId: nextActiveId,
           goals: nextGoals,
         };
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
-        } catch {
-          // ignore
-        }
         if (user) {
           setSyncStatus('syncing');
           setPendingSync(true);
@@ -285,11 +280,6 @@ export function useHabitActions(
           deleteCustomStampFromStorage(user.uid, stampId).catch((e) => {
             console.warn('Failed to delete stamp from Storage:', e);
           });
-        }
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
-        } catch {
-          // ignore
         }
         if (user) {
           setPendingSync(true);

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Palette, Check } from 'lucide-react';
 import { SOUND_OPTIONS, playStampSound } from '../../utils/audio';
 import { useSettings } from '../../contexts/SettingsContext';
+import { useGameStore, selectCalendarStyle, selectSelectedSound } from '../../store/gameStateStore';
 import { SectionDivider, CollapsibleSection } from './SettingsSection';
 import type { CalendarStyle } from '../../types';
 
@@ -14,7 +15,9 @@ const CALENDAR_STYLES: { id: CalendarStyle; label: string }[] = [
 ];
 
 export default function AppearanceSettings() {
-  const { gameState, setCalendarStyle, setSoundEffect } = useSettings();
+  const { setCalendarStyle, setSoundEffect } = useSettings();
+  const calendarStyle = useGameStore(selectCalendarStyle);
+  const selectedSound = useGameStore(selectSelectedSound);
   const [showAppearance, setShowAppearance] = useState(false);
 
   return (
@@ -37,15 +40,15 @@ export default function AppearanceSettings() {
                   key={style.id}
                   onClick={() => setCalendarStyle(style.id)}
                   className={`w-full text-left px-3 py-2 rounded-lg text-sm font-bold flex justify-between items-center transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset ${
-                    gameState.calendarStyle === style.id
+                    calendarStyle === style.id
                       ? 'bg-white dark:bg-slate-600 text-orange-500 dark:text-orange-400 shadow-sm border border-orange-100 dark:border-orange-700'
                       : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600'
                   }`}
                   aria-label={style.label}
-                  aria-pressed={gameState.calendarStyle === style.id}
+                  aria-pressed={calendarStyle === style.id}
                 >
                   {style.label}
-                  {gameState.calendarStyle === style.id && <Check size={14} />}
+                  {calendarStyle === style.id && <Check size={14} />}
                 </button>
               ))}
             </div>
@@ -63,15 +66,15 @@ export default function AppearanceSettings() {
                     playStampSound(sound.id);
                   }}
                   className={`w-full text-left px-3 py-2 rounded-lg text-sm font-bold flex justify-between items-center transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset ${
-                    gameState.selectedSound === sound.id
+                    selectedSound === sound.id
                       ? 'bg-white dark:bg-slate-600 text-indigo-500 dark:text-indigo-400 shadow-sm border border-indigo-100 dark:border-indigo-700'
                       : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600'
                   }`}
                   aria-label={sound.label}
-                  aria-pressed={gameState.selectedSound === sound.id}
+                  aria-pressed={selectedSound === sound.id}
                 >
                   {sound.label}
-                  {gameState.selectedSound === sound.id && <Check size={14} />}
+                  {selectedSound === sound.id && <Check size={14} />}
                 </button>
               ))}
             </div>

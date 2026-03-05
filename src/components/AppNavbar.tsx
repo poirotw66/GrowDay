@@ -158,7 +158,7 @@ export default function AppNavbar({
 
           <div className="hidden lg:flex items-center gap-2">
             <button
-              onClick={onOpenReminder}
+              onClick={modal.openReminder}
               className="p-3 bg-primary/10 dark:bg-primary/20 hover:bg-primary/20 dark:hover:bg-primary/30 rounded-full text-primary dark:text-primary-light transition-all duration-200 shadow-sm border border-primary/20 dark:border-primary/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 cursor-pointer"
               title="提醒設定"
               aria-label="提醒設定"
@@ -182,7 +182,7 @@ export default function AppNavbar({
               <BarChart3 size={20} />
             </button>
             <button
-              onClick={onOpenShareCard}
+              onClick={modal.openShareCard}
               className="p-3 bg-pink-50 dark:bg-pink-900/30 hover:bg-pink-100 dark:hover:bg-pink-900/50 rounded-full text-pink-600 dark:text-pink-400 transition-all duration-200 shadow-sm border border-pink-200 dark:border-pink-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 cursor-pointer"
               title="分享卡片"
               aria-label="分享卡片"
@@ -259,7 +259,7 @@ export default function AppNavbar({
                   </button>
                   <button
                     onClick={() => {
-                      onShowAchievements();
+                      modal.openAchievements();
                       onCloseMoreMenu();
                     }}
                     className="w-full flex items-center gap-3 px-4 py-3 text-left text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
