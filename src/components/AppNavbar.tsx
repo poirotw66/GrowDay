@@ -4,6 +4,7 @@ import ThemeToggle from './ThemeToggle';
 import HabitSwitcher from './HabitSwitcher';
 import SettingsDropdown from './SettingsDropdown';
 import { GameState } from '../types';
+import { useModal } from '../contexts/ModalContext';
 
 export interface AppNavbarProps {
   showSettings: boolean;
@@ -17,19 +18,12 @@ export interface AppNavbarProps {
   signInLoading: boolean;
   userImageError: Record<string, boolean>;
   setUserImageError: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
-  onOpenReminder: () => void;
-  onOpenGoals: () => void;
-  onOpenStatsChart: () => void;
-  onOpenShareCard: () => void;
-  onShowAchievements: () => void;
   showMoreMenu: boolean;
   onCloseMoreMenu: () => void;
   setShowMoreMenu: React.Dispatch<React.SetStateAction<boolean>>;
   onGoToWorld: () => void;
   gameState: GameState;
   onSwitchHabit: (id: string) => void;
-  onOpenAddModal: () => void;
-  onOpenCompendium: () => void;
 }
 
 /**
@@ -47,20 +41,14 @@ export default function AppNavbar({
   signInLoading,
   userImageError,
   setUserImageError,
-  onOpenReminder,
-  onOpenGoals,
-  onOpenStatsChart,
-  onOpenShareCard,
-  onShowAchievements,
   showMoreMenu,
   onCloseMoreMenu,
   setShowMoreMenu,
   onGoToWorld,
   gameState,
   onSwitchHabit,
-  onOpenAddModal,
-  onOpenCompendium,
 }: AppNavbarProps) {
+  const modal = useModal();
   return (
     <header className="max-w-7xl mx-auto mb-6">
       <div className="flex justify-between items-center px-2 mb-4">
@@ -178,7 +166,7 @@ export default function AppNavbar({
               <Bell size={20} />
             </button>
             <button
-              onClick={onOpenGoals}
+              onClick={modal.openGoals}
               className="p-3 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-full text-indigo-600 dark:text-indigo-400 transition-all duration-200 shadow-sm border border-indigo-200 dark:border-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 cursor-pointer"
               title="目標設定"
               aria-label="目標設定"
@@ -186,7 +174,7 @@ export default function AppNavbar({
               <Target size={20} />
             </button>
             <button
-              onClick={onOpenStatsChart}
+              onClick={modal.openStatsChart}
               className="p-3 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/50 rounded-full text-purple-600 dark:text-purple-400 transition-all duration-200 shadow-sm border border-purple-200 dark:border-purple-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 cursor-pointer"
               title="統計圖表"
               aria-label="統計圖表"
@@ -202,7 +190,7 @@ export default function AppNavbar({
               <Share2 size={20} />
             </button>
             <button
-              onClick={onShowAchievements}
+              onClick={modal.openAchievements}
               className="p-3 bg-cta/10 dark:bg-cta/20 hover:bg-cta/20 dark:hover:bg-cta/30 rounded-full text-cta dark:text-amber-400 transition-all duration-200 shadow-sm border border-cta/20 dark:border-cta/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-cta focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 cursor-pointer"
               title="成就"
               aria-label="成就"
@@ -231,7 +219,7 @@ export default function AppNavbar({
                 <div className="absolute right-0 top-full mt-2 py-2 w-52 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 z-40 animate-in fade-in slide-in-from-top-2">
                   <button
                     onClick={() => {
-                      onOpenReminder();
+                      modal.openReminder();
                       onCloseMoreMenu();
                     }}
                     className="w-full flex items-center gap-3 px-4 py-3 text-left text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
@@ -241,7 +229,7 @@ export default function AppNavbar({
                   </button>
                   <button
                     onClick={() => {
-                      onOpenGoals();
+                      modal.openGoals();
                       onCloseMoreMenu();
                     }}
                     className="w-full flex items-center gap-3 px-4 py-3 text-left text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
@@ -251,7 +239,7 @@ export default function AppNavbar({
                   </button>
                   <button
                     onClick={() => {
-                      onOpenStatsChart();
+                      modal.openStatsChart();
                       onCloseMoreMenu();
                     }}
                     className="w-full flex items-center gap-3 px-4 py-3 text-left text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
@@ -261,7 +249,7 @@ export default function AppNavbar({
                   </button>
                   <button
                     onClick={() => {
-                      onOpenShareCard();
+                      modal.openShareCard();
                       onCloseMoreMenu();
                     }}
                     className="w-full flex items-center gap-3 px-4 py-3 text-left text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
@@ -309,8 +297,8 @@ export default function AppNavbar({
       <HabitSwitcher
         gameState={gameState}
         onSwitch={onSwitchHabit}
-        onAdd={onOpenAddModal}
-        onOpenCompendium={onOpenCompendium}
+        onAdd={modal.openAddModal}
+        onOpenCompendium={modal.openCompendium}
       />
     </header>
   );

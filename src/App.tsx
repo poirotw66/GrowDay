@@ -3,6 +3,8 @@ import { useHabitEngine } from './hooks/useHabitEngine';
 import { useTheme } from './contexts/ThemeContext';
 import { useAuth } from './contexts/AuthContext';
 import { SettingsProvider } from './contexts/SettingsContext';
+import { ModalProvider, useModal } from './contexts/ModalContext';
+import type { SettingsContextValue } from './contexts/SettingsContext';
 import PetDisplay from './components/PetDisplay';
 import CalendarView from './components/CalendarView';
 import OverallCalendarView from './components/OverallCalendarView';
@@ -22,6 +24,33 @@ import AppNavbar from './components/AppNavbar';
 import { Calendar as CalendarIcon, LayoutGrid } from 'lucide-react';
 import { playStampSound } from './utils/audio';
 import { startReminderChecker, stopReminderChecker, sendDailyReminder, getReminderSettings } from './utils/notifications';
+
+/**
+ * Injects onShowHallOfFame from ModalContext into Settings value (close settings + open Hall of Fame).
+ * Must be rendered inside ModalProvider.
+ */
+function SettingsProviderWithModal({
+  value,
+  setShowSettings,
+  children,
+}: {
+  value: Omit<SettingsContextValue, 'onShowHallOfFame'> & { onShowHallOfFame?: () => void };
+  setShowSettings: (open: boolean) => void;
+  children: React.ReactNode;
+}) {
+  const modal = useModal();
+  const valueWithHall = useMemo<SettingsContextValue>(
+    () => ({
+      ...value,
+      onShowHallOfFame: () => {
+        modal.openHallOfFame();
+        setShowSettings(false);
+      },
+    }),
+    [value, modal.openHallOfFame, setShowSettings]
+  );
+  return <SettingsProvider value={valueWithHall}>{children}</SettingsProvider>;
+}
 
 function App() {
   const { user, signInWithGoogle, signOut, isFirebaseEnabled, signInLoading, signInError } = useAuth();
@@ -67,14 +96,6 @@ function App() {
 
   const [justStamped, setJustStamped] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showCompendium, setShowCompendium] = useState(false);
-  const [showHallOfFame, setShowHallOfFame] = useState(false);
-  const [showAchievements, setShowAchievements] = useState(false);
-  const [showStatsChart, setShowStatsChart] = useState(false);
-  const [showReminder, setShowReminder] = useState(false);
-  const [showGoals, setShowGoals] = useState(false);
-  const [showShareCard, setShowShareCard] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [choseGuest, setChoseGuest] = useState(false);
   const [userImageError, setUserImageError] = useState<Record<string, boolean>>({});
@@ -179,24 +200,9 @@ function App() {
 
   // Memoized callbacks for child components
   const handleSwitchHabit = useCallback((id: string) => switchHabit(id), [switchHabit]);
-  const handleOpenAddModal = useCallback(() => setShowAddModal(true), []);
-  const handleOpenCompendium = useCallback(() => setShowCompendium(true), []);
-  const handleCloseCompendium = useCallback(() => setShowCompendium(false), []);
-  const handleCloseHallOfFame = useCallback(() => setShowHallOfFame(false), []);
-  const handleCloseAchievements = useCallback(() => setShowAchievements(false), []);
-  const handleShowAchievements = useCallback(() => setShowAchievements(true), []);
-  const handleOpenStatsChart = useCallback(() => setShowStatsChart(true), []);
-  const handleCloseStatsChart = useCallback(() => setShowStatsChart(false), []);
-  const handleOpenReminder = useCallback(() => setShowReminder(true), []);
-  const handleCloseReminder = useCallback(() => setShowReminder(false), []);
-  const handleOpenGoals = useCallback(() => setShowGoals(true), []);
-  const handleCloseGoals = useCallback(() => setShowGoals(false), []);
-  const handleOpenShareCard = useCallback(() => setShowShareCard(true), []);
-  const handleCloseShareCard = useCallback(() => setShowShareCard(false), []);
   const handleGoToWorld = useCallback(() => setCurrentView('world'), []);
   const handleToggleSettings = useCallback(() => setShowSettings(prev => !prev), []);
   const handleCloseSettings = useCallback(() => setShowSettings(false), []);
-  const handleShowHallOfFame = useCallback(() => { setShowHallOfFame(true); setShowSettings(false); }, []);
   const handleDismissToast = useCallback(() => {
     if (newlyUnlockedAchievements.length > 0) {
       dismissToast(newlyUnlockedAchievements[0].id);
@@ -281,90 +287,58 @@ function App() {
         style={{ display: 'none' }}
       />
 
-      <SettingsProvider
-        value={{
-          gameState,
-          activeHabit: activeHabit!,
-          onExportData: handleExportData,
-          onImportClick: handleImportClick,
-          onShowHallOfFame: handleShowHallOfFame,
-          onResetProgress: resetProgress,
-          updateStampStyle,
-          setCalendarStyle,
-          setSoundEffect,
-          updatePetNickname,
-          renameHabit,
-          deleteHabit,
-          onCloseSettings: handleCloseSettings,
-          isFirebaseEnabled,
-          userId: user?.uid ?? null,
-          onAddCustomStamp: addCustomStamp,
-          onDeleteCustomStamp: deleteCustomStamp,
-          debugDate,
-          setDebugDate,
-          debugStartDate,
-          setDebugStartDate,
-          debugEndDate,
-          setDebugEndDate,
-          onDebugStamp: handleDebugStamp,
-          onDebugRangeStamp: handleDebugRangeStamp,
-        }}
-      >
-        <ModalLayer
-          showAddModal={showAddModal}
-          setShowAddModal={setShowAddModal}
-          addHabit={addHabit}
-          showCompendium={showCompendium}
-          onCloseCompendium={handleCloseCompendium}
-          unlockedPetIds={gameState.unlockedPets}
-          showHallOfFame={showHallOfFame}
-          onCloseHallOfFame={handleCloseHallOfFame}
-          retiredPets={gameState.retiredPets}
-          showAchievements={showAchievements}
-          onCloseAchievements={handleCloseAchievements}
-          unlockedAchievementIds={gameState.unlockedAchievements}
-          showStatsChart={showStatsChart}
-          onCloseStatsChart={handleCloseStatsChart}
-          activeHabit={activeHabit}
-          showReminder={showReminder}
-          onCloseReminder={handleCloseReminder}
-          showGoals={showGoals}
-          onCloseGoals={handleCloseGoals}
-          goals={gameState.goals}
-          completedGoals={gameState.completedGoals}
-          addGoal={addGoal}
-          removeGoal={removeGoal}
-          showShareCard={showShareCard}
-          onCloseShareCard={handleCloseShareCard}
-          gameState={gameState}
-        />
+      <ModalProvider>
+        <SettingsProviderWithModal
+          setShowSettings={setShowSettings}
+          value={{
+            gameState,
+            activeHabit: activeHabit!,
+            onExportData: handleExportData,
+            onImportClick: handleImportClick,
+            onShowHallOfFame: () => {},
+            onResetProgress: resetProgress,
+            updateStampStyle,
+            setCalendarStyle,
+            setSoundEffect,
+            updatePetNickname,
+            renameHabit,
+            deleteHabit,
+            onCloseSettings: handleCloseSettings,
+            isFirebaseEnabled,
+            userId: user?.uid ?? null,
+            onAddCustomStamp: addCustomStamp,
+            onDeleteCustomStamp: deleteCustomStamp,
+            debugDate,
+            setDebugDate,
+            debugStartDate,
+            setDebugStartDate,
+            debugEndDate,
+            setDebugEndDate,
+            onDebugStamp: handleDebugStamp,
+            onDebugRangeStamp: handleDebugRangeStamp,
+          }}
+        >
+          <ModalLayer />
 
-        <AppNavbar
-          showSettings={showSettings}
-          onToggleSettings={handleToggleSettings}
-          onCloseSettings={handleCloseSettings}
-          syncStatus={syncStatus}
-          user={user}
-          isFirebaseEnabled={isFirebaseEnabled}
-          signInWithGoogle={signInWithGoogle}
-          signOut={signOut}
-          signInLoading={signInLoading}
-          userImageError={userImageError}
-          setUserImageError={setUserImageError}
-          onOpenReminder={handleOpenReminder}
-          onOpenGoals={handleOpenGoals}
-          onOpenStatsChart={handleOpenStatsChart}
-          onOpenShareCard={handleOpenShareCard}
-          onShowAchievements={handleShowAchievements}
-          showMoreMenu={showMoreMenu}
-          onCloseMoreMenu={handleCloseMoreMenu}
-          setShowMoreMenu={setShowMoreMenu}
-          onGoToWorld={handleGoToWorld}
-          gameState={gameState}
-          onSwitchHabit={handleSwitchHabit}
-          onOpenAddModal={handleOpenAddModal}
-          onOpenCompendium={handleOpenCompendium}
-        />
+          <AppNavbar
+            showSettings={showSettings}
+            onToggleSettings={handleToggleSettings}
+            onCloseSettings={handleCloseSettings}
+            syncStatus={syncStatus}
+            user={user}
+            isFirebaseEnabled={isFirebaseEnabled}
+            signInWithGoogle={signInWithGoogle}
+            signOut={signOut}
+            signInLoading={signInLoading}
+            userImageError={userImageError}
+            setUserImageError={setUserImageError}
+            showMoreMenu={showMoreMenu}
+            onCloseMoreMenu={handleCloseMoreMenu}
+            setShowMoreMenu={setShowMoreMenu}
+            onGoToWorld={handleGoToWorld}
+            gameState={gameState}
+            onSwitchHabit={handleSwitchHabit}
+          />
 
       {/* Main Content Grid: Calendar gets enough space to show fully (no scroll container). Page scrolls when needed. */}
       <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
@@ -440,7 +414,8 @@ function App() {
         </section>
 
       </main>
-      </SettingsProvider>
+        </SettingsProviderWithModal>
+      </ModalProvider>
     </div>
   );
 }

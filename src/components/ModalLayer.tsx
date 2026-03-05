@@ -7,126 +7,81 @@ import StatsChart from './StatsChart';
 import ReminderSettingsComponent from './ReminderSettings';
 import GoalSettings from './GoalSettings';
 import ShareCard from './ShareCard';
-import { GameState, Habit, PetColor, RetiredPet, GoalPeriod } from '../types';
-
-export interface ModalLayerProps {
-  showAddModal: boolean;
-  setShowAddModal: (show: boolean) => void;
-  addHabit: (name: string, icon: string, color: PetColor, stampColor?: string) => void;
-  showCompendium: boolean;
-  onCloseCompendium: () => void;
-  unlockedPetIds: string[];
-  showHallOfFame: boolean;
-  onCloseHallOfFame: () => void;
-  retiredPets: RetiredPet[];
-  showAchievements: boolean;
-  onCloseAchievements: () => void;
-  unlockedAchievementIds: string[];
-  showStatsChart: boolean;
-  onCloseStatsChart: () => void;
-  activeHabit: Habit | null;
-  showReminder: boolean;
-  onCloseReminder: () => void;
-  showGoals: boolean;
-  onCloseGoals: () => void;
-  goals: GameState['goals'];
-  completedGoals: GameState['completedGoals'];
-  addGoal: (habitId: string, period: GoalPeriod, targetDays: number) => void;
-  removeGoal: (goalId: string) => void;
-  showShareCard: boolean;
-  onCloseShareCard: () => void;
-  gameState: GameState;
-}
+import { useModal } from '../contexts/ModalContext';
+import { useHabitEngine } from '../hooks/useHabitEngine';
 
 /**
- * Renders all overlay modals (Add habit, Compendium, Hall of Fame, Achievements, Stats, Reminder, Goals, Share).
+ * Renders all overlay modals. Reads visibility from ModalContext and data/actions from useHabitEngine.
+ * No props – avoids prop drilling.
  */
-export default function ModalLayer({
-  showAddModal,
-  setShowAddModal,
-  addHabit,
-  showCompendium,
-  onCloseCompendium,
-  unlockedPetIds,
-  showHallOfFame,
-  onCloseHallOfFame,
-  retiredPets,
-  showAchievements,
-  onCloseAchievements,
-  unlockedAchievementIds,
-  showStatsChart,
-  onCloseStatsChart,
-  activeHabit,
-  showReminder,
-  onCloseReminder,
-  showGoals,
-  onCloseGoals,
-  goals,
-  completedGoals,
-  addGoal,
-  removeGoal,
-  showShareCard,
-  onCloseShareCard,
-  gameState,
-}: ModalLayerProps) {
+export default function ModalLayer() {
+  const modal = useModal();
+  const {
+    gameState,
+    activeHabit,
+    addHabit,
+    addGoal,
+    removeGoal,
+  } = useHabitEngine();
+
   return (
     <>
-      {showAddModal && (
+      {modal.showAddModal && (
         <Onboarding
           onComplete={(name, icon, color, stampColor) => {
             addHabit(name, icon, color, stampColor);
-            setShowAddModal(false);
+            modal.closeAddModal();
           }}
           isAddingNew={true}
-          onCancel={() => setShowAddModal(false)}
+          onCancel={modal.closeAddModal}
         />
       )}
 
-      {showCompendium && (
+      {modal.showCompendium && (
         <Compendium
-          unlockedPetIds={unlockedPetIds}
-          onClose={onCloseCompendium}
+          unlockedPetIds={gameState.unlockedPets}
+          onClose={modal.closeCompendium}
         />
       )}
 
-      {showHallOfFame && (
-        <HallOfFame retiredPets={retiredPets} onClose={onCloseHallOfFame} />
+      {modal.showHallOfFame && (
+        <HallOfFame retiredPets={gameState.retiredPets} onClose={modal.closeHallOfFame} />
       )}
 
-      {showAchievements && (
+      {modal.showAchievements && (
         <AchievementList
-          unlockedIds={unlockedAchievementIds}
-          onClose={onCloseAchievements}
+          unlockedIds={gameState.unlockedAchievements}
+          onClose={modal.closeAchievements}
         />
       )}
 
-      {showStatsChart && activeHabit && (
-        <StatsChart habit={activeHabit} onClose={onCloseStatsChart} />
+      {modal.showStatsChart && activeHabit && (
+        <StatsChart habit={activeHabit} onClose={modal.closeStatsChart} />
       )}
 
-      {showReminder && (
+      {modal.showReminder && (
         <ReminderSettingsComponent
           habitName={activeHabit?.name}
-          onClose={onCloseReminder}
+          onClose={modal.closeReminder}
         />
       )}
 
-      {showGoals && activeHabit && (
+      {modal.showGoals && activeHabit && (
         <GoalSettings
           habit={activeHabit}
-          goals={goals || []}
-          completedGoals={completedGoals || []}
+          goals={gameState.goals || []}
+          completedGoals={gameState.completedGoals || []}
           onAddGoal={addGoal}
           onRemoveGoal={removeGoal}
-          onClose={onCloseGoals}
+          onClose={modal.closeGoals}
         />
       )}
 
-      {showShareCard && activeHabit && (
+      {modal.showShareCard && activeHabit && (
         <ShareCard
           habit={activeHabit}
           gameState={gameState}
-          onClose={onCloseShareCard}
+          onClose={modal.closeShareCard}
         />
       )}
     </>
