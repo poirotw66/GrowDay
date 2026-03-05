@@ -269,7 +269,17 @@ function App() {
   // --- MAIN HABIT VIEW RENDER ---
   return (
     <div className="min-h-screen bg-surface dark:bg-slate-900 font-sans text-ink dark:text-white p-4 lg:p-8 relative transition-colors duration-300">
-      
+      {syncStatus === 'error' && (
+        <div className="max-w-7xl mx-auto mb-4">
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-500/40 dark:bg-red-950/60 dark:text-red-100 shadow-sm">
+            <p className="font-semibold">雲端同步發生錯誤</p>
+            <p className="mt-1">
+              目前畫面顯示的是本機儲存的資料，最新進度可能尚未成功備份到雲端。
+              請稍後檢查網路連線或重新整理頁面後再試一次。
+            </p>
+          </div>
+        </div>
+      )}
       {/* Toast Notification Layer */}
       {newlyUnlockedAchievements.length > 0 && (
           <AchievementToast 

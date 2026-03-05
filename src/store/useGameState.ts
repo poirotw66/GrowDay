@@ -2,7 +2,7 @@
  * Core game state and persistence. Uses Zustand store (localStorage via persist);
  * Firestore sync runs here as a subscriber to auth + store.
  */
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type MutableRefObject } from 'react';
 import type { GameState, Habit } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { getGameStateForUser, setGameStateForUser } from '../firebase';
@@ -52,7 +52,7 @@ export function useGameState(): {
   isLoaded: boolean;
   syncStatus: SyncStatus;
   syncHelpers: SyncHelpers;
-  gameStateRef: React.MutableRefObject<GameState>;
+  gameStateRef: MutableRefObject<GameState>;
 } {
   const gameState = useGameStore(selectGameState);
   const setGameState = useGameStore(selectSetGameState);
